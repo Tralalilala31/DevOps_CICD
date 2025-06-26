@@ -5,34 +5,28 @@ export enum UserRole {
 
 export interface User {
   id: string;
-  name: string;
+  nom: string;
+  prenom: string;
   email: string;
-  password: string;
-  role: UserRole;
-  createdAt: Date;
 }
 
 export interface CreateUserDto {
-  name: string;
+  nom: string;
+  prenom: string;
   email: string;
-  password: string;
-  role?: UserRole;
 }
 
 export interface UpdateUserDto {
-  name?: string;
+  nom?: string;
+  prenom?: string;
   email?: string;
-  password?: string;
-  role?: UserRole;
 }
 
 export interface UserResponse {
   id: string;
-  name: string;
+  nom: string;
+  prenom: string;
   email: string;
-  role: UserRole;
-  createdAt: Date;
-  // Mot de passe exclu des réponses pour la sécurité
 }
 
 export interface UsersListResponse {

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { CreateUserDto, UpdateUserDto, UserRole } from "../types/user";
+import { CreateUserDto, UpdateUserDto } from "../types/user";
 import { validateUserData, validateUpdateUserData } from "../utils/validation";
 import * as userService from "../services/user";
 
@@ -95,11 +95,6 @@ export const createUser = async (
         details: validation.errors,
       });
       return;
-    }
-
-    // Assignation du rôle par défaut si non fourni
-    if (!userData.role) {
-      userData.role = UserRole.USER;
     }
 
     const newUser = await userService.createUser(userData);

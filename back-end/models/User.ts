@@ -1,21 +1,16 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
-import { UserRole } from "../types/user";
 
 // Interface pour les attributs du modèle User
 interface UserAttributes {
   id: string;
-  name: string;
+  nom: string;
+  prenom: string;
   email: string;
-  password: string;
-  role: UserRole;
-  createdAt?: Date;
-  updatedAt?: Date;
 }
 
 // Interface pour la création d'un User (id est généré automatiquement)
-interface UserCreationAttributes
-  extends Optional<UserAttributes, "id" | "role" | "createdAt" | "updatedAt"> {}
+interface UserCreationAttributes extends Optional<UserAttributes, "id"> {}
 
 // Classe du modèle User
 class User
@@ -23,21 +18,17 @@ class User
   implements UserAttributes
 {
   public id!: string;
-  public name!: string;
+  public nom!: string;
+  public prenom!: string;
   public email!: string;
-  public password!: string;
-  public role!: UserRole;
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
 
-  // Méthode pour convertir en UserResponse (sans password)
+  // Méthode pour convertir en UserResponse
   public toResponse() {
     return {
       id: this.id,
-      name: this.name,
+      nom: this.nom,
+      prenom: this.prenom,
       email: this.email,
-      role: this.role,
-      createdAt: this.createdAt,
     };
   }
 }
@@ -51,7 +42,15 @@ User.init(
       primaryKey: true,
       allowNull: false,
     },
-    name: {
+    nom: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+        len: [2, 100],
+      },
+    },
+    prenom: {
       type: DataTypes.STRING(100),
       allowNull: false,
       validate: {
@@ -68,28 +67,12 @@ User.init(
         notEmpty: true,
       },
     },
-    password: {
-      type: DataTypes.STRING(255),
-      allowNull: false,
-      validate: {
-        notEmpty: true,
-        len: [6, 255],
-      },
-    },
-    role: {
-      type: DataTypes.ENUM(...Object.values(UserRole)),
-      allowNull: false,
-      defaultValue: UserRole.USER,
-      validate: {
-        isIn: [Object.values(UserRole)],
-      },
-    },
   },
   {
     sequelize,
     modelName: "User",
     tableName: "users",
-    timestamps: true,
+    timestamps: false,
     indexes: [
       {
         unique: true,

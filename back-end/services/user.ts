@@ -3,13 +3,13 @@ import {
   UpdateUserDto,
   UserResponse,
   UsersListResponse,
-  UserRole,
 } from "../types/user";
 import { User } from "../models";
-import * as bcrypt from "bcryptjs";
 
 /**
  * Service pour la gestion des utilisateurs
+ */
+
 /**
  * Récupérer tous les utilisateurs avec limite
  * @param limit Nombre d'utilisateurs maximum à retourner
@@ -21,8 +21,7 @@ export const getAllUsers = async (
   try {
     const users = await User.findAll({
       limit: limit,
-      order: [["createdAt", "DESC"]],
-      attributes: { exclude: ["password"] }, // Exclure le password
+      order: [["id", "ASC"]], // Tri par ID
     });
 
     const total = await User.count();
@@ -45,9 +44,7 @@ export const getAllUsers = async (
  */
 export const getUserById = async (id: string): Promise<UserResponse | null> => {
   try {
-    const user = await User.findByPk(id, {
-      attributes: { exclude: ["password"] }, // Exclure le password
-    });
+    const user = await User.findByPk(id);
 
     if (!user) {
       return null;
@@ -78,16 +75,11 @@ export const createUser = async (
       throw new Error("Un utilisateur avec cet email existe déjà");
     }
 
-    // Hasher le mot de passe
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
-
     // Créer l'utilisateur
     const newUser = await User.create({
-      name: userData.name,
+      nom: userData.nom,
+      prenom: userData.prenom,
       email: userData.email.toLowerCase(),
-      password: hashedPassword,
-      role: userData.role || UserRole.USER,
     });
 
     return newUser.toResponse();
@@ -143,31 +135,20 @@ export const updateUser = async (
       updateFields.email = updateData.email.toLowerCase();
     }
 
-    // Hasher le nouveau mot de passe si fourni
-    if (updateData.password) {
-      const saltRounds = 12;
-      updateFields.password = await bcrypt.hash(
-        updateData.password,
-        saltRounds
-      );
-    }
-
     // Ajouter les autres champs
-    if (updateData.name) {
-      updateFields.name = updateData.name;
+    if (updateData.nom) {
+      updateFields.nom = updateData.nom;
     }
 
-    if (updateData.role) {
-      updateFields.role = updateData.role;
+    if (updateData.prenom) {
+      updateFields.prenom = updateData.prenom;
     }
 
     // Mettre à jour l'utilisateur
     await existingUser.update(updateFields);
 
     // Recharger l'utilisateur mis à jour
-    await existingUser.reload({
-      attributes: { exclude: ["password"] },
-    });
+    await existingUser.reload();
 
     return existingUser.toResponse();
   } catch (error) {
@@ -230,35 +211,23 @@ export const emailExists = async (email: string): Promise<boolean> => {
 };
 
 /**
- * Vérifier un mot de passe
- * @param plainPassword Mot de passe en clair
- * @param hashedPassword Mot de passe haché
- * @returns True si le mot de passe correspond
- */
-export const verifyPassword = async (
-  plainPassword: string,
-  hashedPassword: string
-): Promise<boolean> => {
-  try {
-    return await bcrypt.compare(plainPassword, hashedPassword);
-  } catch (error) {
-    console.error("Erreur lors de la vérification du mot de passe:", error);
-    return false;
-  }
-};
-
-/**
- * Récupérer un utilisateur par email (pour l'authentification)
+ * Récupérer un utilisateur par email
  * @param email Email de l'utilisateur
- * @returns Utilisateur avec mot de passe (pour vérification)
+ * @returns Utilisateur trouvé
  */
-export const getUserByEmail = async (email: string): Promise<any> => {
+export const getUserByEmail = async (
+  email: string
+): Promise<UserResponse | null> => {
   try {
     const user = await User.findOne({
       where: { email: email.toLowerCase() },
     });
 
-    return user;
+    if (!user) {
+      return null;
+    }
+
+    return user.toResponse();
   } catch (error) {
     console.error(
       "Erreur lors de la récupération de l'utilisateur par email:",
