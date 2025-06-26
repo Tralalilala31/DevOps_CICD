@@ -20,12 +20,17 @@ export class MembersListComponent implements OnInit {
     this.loadMembers();
   }
 
-  loadMembers(): void {
-    this.membersService.getMembers().subscribe({
-      next: (data) => this.members = data,
-      error: (err) => console.error('Erreur chargement membres :', err)
-    });
-  }
+loadMembers(): void {
+  this.membersService.getMembers().subscribe({
+    next: (res) => {
+      console.log('📦 Données reçues de l\'API :', res);
+      this.members = res.data.users; // ✅ C’est ici qu’il faut cibler
+    },
+    error: (err) => console.error('Erreur chargement membres :', err)
+  });
+}
+
+
 
   deleteMember(id: string): void {
     this.membersService.deleteMember(id).subscribe({

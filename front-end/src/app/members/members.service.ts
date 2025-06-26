@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Member } from '../models/member.model';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -13,13 +13,16 @@ export class MembersService {
 
   constructor(private http: HttpClient) {}
 
-getMembers(): Observable<Member[]> {
-  return this.http.get<Member[]>(this.apiUrl);
+getMembers(): Observable<{ data: { users: Member[] } }> {
+  return this.http.get<{ data: { users: Member[] } }>(`${this.apiUrl}`);
 }
 
+
 getMemberById(id: string): Observable<Member> {
-  return this.http.get<Member>(`${this.apiUrl}/${id}`);
+  return this.http.get<{ success: boolean, message: string, data: Member }>(`${this.apiUrl}/${id}`)
+    .pipe(map(res => res.data)); // 👈 on extrait directement data
 }
+
 
 addMember(member: Member): Observable<Member> {
   return this.http.post<Member>(this.apiUrl, member);

@@ -22,19 +22,23 @@ export class MembersEditComponent implements OnInit {
     private membersService: MembersService
   ) {}
 
-  ngOnInit(): void {
-    this.memberId = this.route.snapshot.paramMap.get('id')!;
-    this.memberForm = this.fb.group({
-      nom: ['', Validators.required],
-      prenom: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]]
-    });
+ngOnInit(): void {
+  this.memberId = this.route.snapshot.paramMap.get('id')!;
+  this.memberForm = this.fb.group({
+    nom: ['', Validators.required],
+    prenom: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]]
+  });
 
-    this.membersService.getMemberById(this.memberId).subscribe({
-      next: (member) => this.memberForm.patchValue(member),
-      error: (err) => console.error('Erreur chargement membre :', err)
-    });
-  }
+  this.membersService.getMemberById(this.memberId).subscribe({
+    next: (res) => {
+      console.log('🔎 Membre reçu pour édition :', res);
+      this.memberForm.patchValue(res.data); // ✅ ici on extrait le vrai membre
+    },
+    error: (err) => console.error('Erreur chargement membre :', err)
+  });
+}
+
 
   onSubmit(): void {
     if (this.memberForm.valid) {
