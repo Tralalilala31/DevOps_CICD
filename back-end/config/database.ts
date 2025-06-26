@@ -1,9 +1,8 @@
 import { Sequelize } from "sequelize";
 import { config } from "dotenv";
-import { join } from "path";
 
 // Configuration des variables d'environnement depuis le dossier parent
-config({ path: join(__dirname, "../../.env") });
+config();
 
 // Configuration Sequelize
 const sequelize = new Sequelize(
