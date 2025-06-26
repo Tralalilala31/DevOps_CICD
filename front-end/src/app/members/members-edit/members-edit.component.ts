@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterModule, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { MembersService } from '../members.service';
 
 @Component({
   standalone: true,
@@ -10,38 +11,37 @@ import { CommonModule } from '@angular/common';
   templateUrl: './members-edit.component.html',
   styleUrls: ['./members-edit.component.css']
 })
-
 export class MembersEditComponent implements OnInit {
   memberForm!: FormGroup;
-  memberId!: number;
+  memberId!: string;
 
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private membersService: MembersService
   ) {}
 
   ngOnInit(): void {
-    this.memberId = +this.route.snapshot.paramMap.get('id')!;
-    // TODO: Remplacer par une requête vers le backend plus tard
-    const mockMember = {
-      id: this.memberId,
-      nom: 'MockNom',
-      prenom: 'MockPrenom',
-      email: 'mock@email.com'
-    };
-
+    this.memberId = this.route.snapshot.paramMap.get('id')!;
     this.memberForm = this.fb.group({
-      nom: [mockMember.nom, Validators.required],
-      prenom: [mockMember.prenom, Validators.required],
-      email: [mockMember.email, [Validators.required, Validators.email]]
+      nom: ['', Validators.required],
+      prenom: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]]
+    });
+
+    this.membersService.getMemberById(this.memberId).subscribe({
+      next: (member) => this.memberForm.patchValue(member),
+      error: (err) => console.error('Erreur chargement membre :', err)
     });
   }
 
   onSubmit(): void {
     if (this.memberForm.valid) {
-      console.log('Membre mis à jour :', this.memberForm.value);
-      this.router.navigate(['/members']);
+      this.membersService.updateMember(this.memberId, this.memberForm.value).subscribe({
+        next: () => this.router.navigate(['/members']),
+        error: (err) => console.error('Erreur mise à jour :', err)
+      });
     }
   }
 }

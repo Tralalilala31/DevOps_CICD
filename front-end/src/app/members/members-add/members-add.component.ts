@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { MembersService } from '../members.service';
 
 @Component({
   standalone: true,
@@ -13,7 +14,11 @@ import { RouterModule, Router } from '@angular/router';
 export class MembersAddComponent {
   memberForm: FormGroup;
 
-  constructor(private fb: FormBuilder, private router: Router) {
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    private membersService: MembersService
+  ) {
     this.memberForm = this.fb.group({
       nom: ['', Validators.required],
       prenom: ['', Validators.required],
@@ -21,12 +26,12 @@ export class MembersAddComponent {
     });
   }
 
-  onSubmit() {
+  onSubmit(): void {
     if (this.memberForm.valid) {
-      const memberData = this.memberForm.value;
-      console.log('Member à ajouter :', memberData);
-      // TODO: envoyer via le service
-      this.router.navigate(['/members']);
+      this.membersService.addMember(this.memberForm.value).subscribe({
+        next: () => this.router.navigate(['/members']),
+        error: (err) => console.error('Erreur ajout membre :', err)
+      });
     }
   }
 }

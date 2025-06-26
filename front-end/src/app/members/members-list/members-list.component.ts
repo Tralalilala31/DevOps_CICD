@@ -1,13 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { MembersService } from '../members.service';
+import { Member } from '../../models/member.model';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-
-interface Member {
-  id: number;
-  nom: string;
-  prenom: string;
-  email: string;
-}
 
 @Component({
   standalone: true,
@@ -16,17 +11,26 @@ interface Member {
   templateUrl: './members-list.component.html',
   styleUrls: ['./members-list.component.css']
 })
+export class MembersListComponent implements OnInit {
+  members: Member[] = [];
 
-export class MembersListComponent {
-  members: Member[] = [
-    { id: 1, nom: 'Dupont', prenom: 'Jean', email: 'jean.dupont@email.com' },
-    { id: 2, nom: 'Durand', prenom: 'Claire', email: 'claire.durand@email.com' },
-    { id: 3, nom: 'Martin', prenom: 'Luc', email: 'luc.martin@email.com' }
-  ];
-  
-  deleteMember(id: number) {
-  console.log('Suppression du membre avec ID :', id);
-  // TODO : Appeler le service lorsqu’il sera connecté
-}
+  constructor(private membersService: MembersService) {}
 
+  ngOnInit(): void {
+    this.loadMembers();
+  }
+
+  loadMembers(): void {
+    this.membersService.getMembers().subscribe({
+      next: (data) => this.members = data,
+      error: (err) => console.error('Erreur chargement membres :', err)
+    });
+  }
+
+  deleteMember(id: string): void {
+    this.membersService.deleteMember(id).subscribe({
+      next: () => this.loadMembers(),
+      error: (err) => console.error('Erreur suppression membre :', err)
+    });
+  }
 }

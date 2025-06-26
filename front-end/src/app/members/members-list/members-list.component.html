@@ -30,7 +30,8 @@
         </button>
         <button
           class="btn btn-sm btn-outline-danger"
-          (click)="deleteMember(member.id)"
+          (click)="deleteMember(member.id!.toString())"
+
         >
           Supprimer
         </button>
