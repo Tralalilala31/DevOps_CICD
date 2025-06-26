@@ -1,0 +1,124 @@
+on:
+  push:
+    branches: ['*']
+  pull_request:
+    branches: ['*']
+  schedule:
+    - cron: '0 22 * * *'
+
+name: CI/CD Pipeline
+
+jobs:
+  # --- FRONTEND BUILD ---
+  build_frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies & build frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+  # --- BACKEND BUILD + TESTS // A revoir avec les vraies infos !! ---
+  build_test_backend:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_DATABASE: mydb
+          MYSQL_USER: user
+          MYSQL_PASSWORD: pass
+          MYSQL_ROOT_PASSWORD: rootpass
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci
+      - name: Run unit and integration tests
+        run: |
+          cd backend
+          npm run test:unit
+          npm run test:integration
+
+  # --- PERFORMANCE TESTS (Backend) ---
+  perf_tests:
+    needs: build_test_backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install and run performance tests
+        run: |
+          cd backend/tests/perf
+          npm ci
+          node perf-test.js 
+
+  # --- E2E TESTS (Nightly) ---
+  e2e_tests:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup E2E environment
+        run: |
+          docker-compose up -d
+          sleep 10
+      - name: Run E2E tests
+        run: |
+          cd e2e-tests
+          npm ci
+          npm run test:e2e 
+
+  # --- DEPLOY STAGING ---
+  deploy_staging:
+    needs: [build_frontend, build_test_backend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to staging
+        run: echo "🟢 Déploiement staging (mock)" # à remplacer par un vrai script (Docker SSH, Vercel, etc.)
+
+  # --- DEPLOY PRODUCTION (tag only) ---
+  deploy_production:
+    needs: deploy_staging
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to production
+        run: echo "🚀 Déploiement production (mock)" # réel : script SSH, K8s, Heroku, etc.
+
+  # --- WEBHOOK NOTIFICATIONS ---
+  notify_webhook_success:
+    if: success()
+    needs: [ deploy_staging, deploy_production ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify success
+        run: |
+          curl -X POST ${{ secrets.WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d '{"status": "success", "message": "✅ Build & deploy completed"}'
+
+  notify_webhook_failure:
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify failure
+        run: |
+          curl -X POST ${{ secrets.WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d '{"status": "failure", "message": "❌ Échec du pipeline CI/CD"}'
