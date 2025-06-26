@@ -28,6 +28,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "typeRoots": ["./node_modules/@types", "./src/types"],
+    "types": ["jest", "node"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
