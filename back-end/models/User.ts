@@ -1,21 +1,14 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
-
-// Interface pour les attributs du modèle User
-interface UserAttributes {
-  id: string;
-  nom: string;
-  prenom: string;
-  email: string;
-}
+import { User as UserInterface } from "../types/user";
 
 // Interface pour la création d'un User (id est généré automatiquement)
-interface UserCreationAttributes extends Optional<UserAttributes, "id"> {}
+interface UserCreationAttributes extends Optional<UserInterface, "id"> {}
 
 // Classe du modèle User
 class User
-  extends Model<UserAttributes, UserCreationAttributes>
-  implements UserAttributes
+  extends Model<UserInterface, UserCreationAttributes>
+  implements UserInterface
 {
   public id!: string;
   public nom!: string;

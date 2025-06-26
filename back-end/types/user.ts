@@ -1,8 +1,3 @@
-export enum UserRole {
-  USER = "user",
-  ADMIN = "admin",
-}
-
 export interface User {
   id: string;
   nom: string;

@@ -1,12 +1,8 @@
 import express from "express";
 import cors from "cors";
-import { config } from "dotenv";
 import { createServer } from "http";
 import userRoutes from "./routes/user";
 import { connectDB } from "./config/database";
-
-// Configuration des variables d'environnement
-config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
