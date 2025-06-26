@@ -20,7 +20,7 @@ getMembers(): Observable<{ data: { users: Member[] } }> {
 
 getMemberById(id: string): Observable<Member> {
   return this.http.get<{ success: boolean, message: string, data: Member }>(`${this.apiUrl}/${id}`)
-    .pipe(map(res => res.data)); // 👈 on extrait directement data
+    .pipe(map(res => res.data));
 }
 
 
