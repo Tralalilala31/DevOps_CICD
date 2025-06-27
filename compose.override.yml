@@ -3,7 +3,8 @@ services:
   backend:
     build:
       target: dev
-
+    environment:
+      NODE_ENV: development
   frontend:
     build:
       target: dev

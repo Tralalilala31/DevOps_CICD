@@ -1,3 +1,8 @@
-FROM node:18-alpine as dev
+FROM node:20-alpine as dev
+
+WORKDIR /app
+COPY . .
+RUN npm install
+
 EXPOSE 5000
-CMD [ "sleep", "infinity" ]
+CMD [ "npm", "run", "dev" ]

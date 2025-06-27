@@ -3,13 +3,14 @@ services:
     build:
       context: ./back-end
     ports:
-      - 3000:5000
+      - 3000:3000
     environment:
-      DATABASE_HOST: mysql
-      DATABASE_NAME: ${PROJECT_NAME}
-      DATABASE_USER: admin
-      DATABASE_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
-      DATABASE_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${PROJECT_NAME}
+      DB_USER: admin
+      DB_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
+      FRONTEND_URL: "http://frontend:4200"
     depends_on:
       mysql:
         condition: service_healthy
