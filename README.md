@@ -31,6 +31,11 @@ up \
 
 ## Développement local
 
+Pour développer, 2 possibilités :
+
+- Développer en local : l'installation en local de npm est nécessaires.
+- Développement conteneurisé sur VSCode via l'extension "Remote Development" > "Attach to Running Container...".
+
 Créer les containers (utilise compose et compose.override) :
 
 ```bash

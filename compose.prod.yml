@@ -1,5 +1,15 @@
 name: ${PROJECT_NAME}-prod
 services:
+  backend:
+    build:
+      target: prod
+    restart: unless-stopped
+
+  frontend:
+    build:
+      target: prod
+    restart: unless-stopped
+
   mysql:
     restart: unless-stopped
 

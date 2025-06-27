@@ -1,5 +1,13 @@
 name: ${PROJECT_NAME}-dev
 services:
+  backend:
+    build:
+      target: dev
+
+  frontend:
+    build:
+      target: dev
+
   phpmyadmin:
     environment:
       PMA_USER: root
