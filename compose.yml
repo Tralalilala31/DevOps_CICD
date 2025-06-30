@@ -1,4 +1,27 @@
 services:
+  backend:
+    build:
+      context: ./back-end
+    ports:
+      - 3000:3000
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${PROJECT_NAME}
+      DB_USER: admin
+      DB_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
+      FRONTEND_URL: "http://frontend:4200"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build: ./front-end
+    ports:
+      - "80:4200"
+    depends_on:
+      - backend
+
   mysql:
     image: mysql:${MYSQL_VERSION}
     environment:
@@ -19,8 +42,6 @@ services:
     image: phpmyadmin/phpmyadmin:latest
     environment:
       PMA_HOST: mysql
-      PMA_USER: root
-      PMA_PASSWORD: ${DATABASE_ROOT_PASSWORD}
     ports:
       - 8080:80
     depends_on:
