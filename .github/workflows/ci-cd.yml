@@ -231,27 +231,26 @@ jobs:
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
             set -e
           
-            # Préparation dossier
-            mkdir -p /home/cicd/staging
+            mkdir -p ~/.local/bin
+            export PATH=$HOME/.local/bin:$PATH
           
-            # Installer docker-compose si manquant
             if ! command -v docker-compose &> /dev/null; then
-              echo "🧩 Installation de docker-compose..."
-              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-              sudo chmod +x /usr/local/bin/docker-compose
+            echo "🧩 Installation locale de docker-compose..."
+            curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o ~/.local/bin/docker-compose
+            chmod +x ~/.local/bin/docker-compose
             fi
           
-            # Extraction et déploiement
             cd /home/cicd
             tar -xzf staging-deployment.tar.gz -C staging/
             cd staging
           
-            docker-compose down || true
-            docker-compose up --build -d
+            ~/.local/bin/docker-compose down || true
+            ~/.local/bin/docker-compose up --build -d
+          
             sleep 10
-            docker-compose ps
+            ~/.local/bin/docker-compose ps
           EOF
-    
+
           - name: Verify staging deployment
             run: |
               echo "🔍 Vérification du déploiement staging"
