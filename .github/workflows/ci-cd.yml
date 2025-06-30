@@ -121,7 +121,6 @@ jobs:
           DB_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}
           DB_NAME=${{ env.PROJECT_NAME }}
           NODE_ENV=performance
-          PORT=5000
           EOF
 
       - name: Install backend dependencies
