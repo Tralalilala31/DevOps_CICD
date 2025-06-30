@@ -186,13 +186,13 @@ jobs:
 
       - name: Configure staging environment
         run: |
-          echo > .env.staging << EOF
+          cat > .env.staging << EOF
           PROJECT_NAME=${{ env.PROJECT_NAME }}
           NODE_ENV=staging
           DATABASE_ADMIN_USER=${{ secrets.DATABASE_ADMIN_USER }}
           DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}
           DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}
-          DB_HOST=localhost
+          DB_HOST=mysql
           DB_PORT=3306
           DB_NAME=${{ env.PROJECT_NAME }}_staging
           APP_URL=http://212.83.130.245:3000
@@ -216,12 +216,79 @@ jobs:
         run: |
           mkdir -p deploy/staging
           
+          # Copier les fichiers construits
           cp -r front-end/dist deploy/staging/frontend
           cp -r back-end deploy/staging/
+          
+          # Copier les Dockerfiles
+          cp front-end/Dockerfile deploy/staging/frontend/ 2>/dev/null || echo "Warning: Frontend Dockerfile not found"
+          cp back-end/Dockerfile deploy/staging/back-end/ 2>/dev/null || echo "Warning: Backend Dockerfile not found"
+          
+          # Copier les fichiers de configuration
           cp .env.staging deploy/staging/.env
-          cp compose.staging.yml deploy/staging/compose.yml
+          
+          # Créer le docker-compose.yml avec les variables substituées
+          cat > deploy/staging/docker-compose.yml << EOF
+          name: ${{ env.PROJECT_NAME }}-staging
+          
+          services:
+            backend:
+              build:
+                context: ./back-end
+                dockerfile: Dockerfile
+              ports:
+                - "3001:3001"
+              environment:
+                - NODE_ENV=staging
+                - PROJECT_NAME=${{ env.PROJECT_NAME }}
+                - DB_HOST=mysql
+                - DB_PORT=3306
+                - DB_NAME=${{ env.PROJECT_NAME }}_staging
+                - DB_USER=admin
+                - DB_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}
+                - DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}
+              depends_on:
+                mysql:
+                  condition: service_healthy
+          
+            frontend:
+              build:
+                context: ./frontend
+                dockerfile: Dockerfile
+              ports:
+                - "3000:80"
+              depends_on:
+                - backend
+          
+            mysql:
+              image: mysql:8.0
+              environment:
+                MYSQL_DATABASE: ${{ env.PROJECT_NAME }}_staging
+                MYSQL_USER: admin
+                MYSQL_PASSWORD: ${{ secrets.DATABASE_ADMIN_PASSWORD }}
+                MYSQL_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
+              volumes:
+                - mysql-data:/var/lib/mysql
+              healthcheck:
+                test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+                interval: 10s
+                timeout: 5s
+                retries: 5
+          
+          volumes:
+            mysql-data:
+              name: "${{ env.PROJECT_NAME }}-staging-db"
+          EOF
           
           tar -czf staging-deployment.tar.gz -C deploy/staging .
+
+      - name: Upload deployment package to server
+        run: |
+          echo "📦 Transfert du package de déploiement vers staging"
+          
+          sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' rsync -avz --delete \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            staging-deployment.tar.gz ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/
 
       - name: Deploy to staging server
         run: |
@@ -231,36 +298,67 @@ jobs:
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
             set -e
           
+            # Configuration des variables d'environnement
+            export PROJECT_NAME=${{ env.PROJECT_NAME }}
+            export DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}
+            export DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}
+          
             mkdir -p ~/.local/bin
             export PATH=$HOME/.local/bin:$PATH
           
+            # Installation de docker-compose si nécessaire
             if ! command -v docker-compose &> /dev/null; then
-            echo "🧩 Installation locale de docker-compose..."
-            curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o ~/.local/bin/docker-compose
-            chmod +x ~/.local/bin/docker-compose
+              echo "🧩 Installation locale de docker-compose..."
+              curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o ~/.local/bin/docker-compose
+              chmod +x ~/.local/bin/docker-compose
             fi
           
+            # Création du répertoire de staging
+            mkdir -p /home/cicd/staging
             cd /home/cicd
+          
+            # Extraction du package
             tar -xzf staging-deployment.tar.gz -C staging/
             cd staging
           
+            # Arrêt des services existants
             ~/.local/bin/docker-compose down || true
+          
+            # Nettoyage des images obsolètes
+            docker image prune -f || true
+          
+            # Démarrage des nouveaux services
             ~/.local/bin/docker-compose up --build -d
           
-            sleep 10
+            echo "⏳ Attente du démarrage des services..."
+            sleep 15
+          
+            # Vérification du statut
             ~/.local/bin/docker-compose ps
+          
+            echo "✅ Déploiement staging terminé"
           EOF
 
-          - name: Verify staging deployment
-            run: |
-              echo "🔍 Vérification du déploiement staging"
-              sleep 30
-              
-              curl -f http://212.83.130.245:3001/health || echo "⚠️ API health check failed"
-              
-              curl -f http://212.83.130.245:3000 || echo "⚠️ Frontend check failed"
-              
-              echo "✅ Déploiement staging terminé"
+      - name: Verify staging deployment
+        run: |
+          echo "🔍 Vérification du déploiement staging"
+          sleep 30
+          
+          # Test de l'API
+          if curl -f --max-time 10 http://212.83.130.245:3001/health; then
+            echo "✅ API health check passed"
+          else
+            echo "⚠️ API health check failed"
+          fi
+          
+          # Test du frontend
+          if curl -f --max-time 10 http://212.83.130.245:3000; then
+            echo "✅ Frontend check passed"
+          else
+            echo "⚠️ Frontend check failed"
+          fi
+          
+          echo "✅ Déploiement staging vérifié"
 
   deploy_production:
     needs: deploy_staging
@@ -287,14 +385,14 @@ jobs:
         run: |
           umask 077
           
-          echo > .env.production << EOF
+          cat > .env.production << EOF
           PROJECT_NAME=${{ env.PROJECT_NAME }}
           NODE_ENV=production
           
           DATABASE_ADMIN_USER=${{ secrets.DATABASE_ADMIN_USER }}
           DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}
           DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}
-          DB_HOST=localhost
+          DB_HOST=mysql
           DB_PORT=3306
           DB_NAME=${{ env.PROJECT_NAME }}_prod
           
@@ -328,14 +426,77 @@ jobs:
         run: |
           mkdir -p deploy/production
           
+          # Copier les fichiers construits
           cp -r front-end/dist deploy/production/frontend
           cp -r back-end deploy/production/
-          cp .env.production deploy/production/.env
-          cp docker-compose.production.yml deploy/production/docker-compose.yml
           
+          # Copier les Dockerfiles
+          cp front-end/Dockerfile deploy/production/frontend/ 2>/dev/null || echo "Warning: Frontend Dockerfile not found"
+          cp back-end/Dockerfile deploy/production/back-end/ 2>/dev/null || echo "Warning: Backend Dockerfile not found"
+          
+          # Copier les fichiers de configuration
+          cp .env.production deploy/production/.env
+          
+          # Créer le docker-compose.yml pour la production
+          cat > deploy/production/docker-compose.yml << EOF
+          name: ${{ env.PROJECT_NAME }}-production
+          
+          services:
+            backend:
+              build:
+                context: ./back-end
+                dockerfile: Dockerfile
+              ports:
+                - "4001:4001"
+              environment:
+                - NODE_ENV=production
+                - PROJECT_NAME=${{ env.PROJECT_NAME }}
+                - DB_HOST=mysql
+                - DB_PORT=3306
+                - DB_NAME=${{ env.PROJECT_NAME }}_prod
+                - DB_USER=admin
+                - DB_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}
+                - DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}
+              depends_on:
+                mysql:
+                  condition: service_healthy
+              restart: unless-stopped
+          
+            frontend:
+              build:
+                context: ./frontend
+                dockerfile: Dockerfile
+              ports:
+                - "4000:80"
+              depends_on:
+                - backend
+              restart: unless-stopped
+          
+            mysql:
+              image: mysql:8.0
+              environment:
+                MYSQL_DATABASE: ${{ env.PROJECT_NAME }}_prod
+                MYSQL_USER: admin
+                MYSQL_PASSWORD: ${{ secrets.DATABASE_ADMIN_PASSWORD }}
+                MYSQL_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
+              volumes:
+                - mysql-data:/var/lib/mysql
+              healthcheck:
+                test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+                interval: 10s
+                timeout: 5s
+                retries: 5
+              restart: unless-stopped
+          
+          volumes:
+            mysql-data:
+              name: "${{ env.PROJECT_NAME }}-production-db"
+          EOF
+          
+          # Copier les scripts de sauvegarde si ils existent
           mkdir -p deploy/production/scripts
-          cp scripts/backup-db.sh deploy/production/scripts/
-          cp scripts/health-check.sh deploy/production/scripts/
+          cp scripts/backup-db.sh deploy/production/scripts/ 2>/dev/null || echo "Warning: backup-db.sh not found"
+          cp scripts/health-check.sh deploy/production/scripts/ 2>/dev/null || echo "Warning: health-check.sh not found"
           
           tar -czf production-deployment.tar.gz -C deploy/production .
 
@@ -344,49 +505,62 @@ jobs:
           echo "💾 Sauvegarde de la production actuelle"
           
           sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
-            ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'EOF'
+            ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << EOF
             # Créer le dossier de backup avec timestamp
-            BACKUP_DIR="/home/cicd/backups/$(date +%Y%m%d_%H%M%S)"
-            mkdir -p $BACKUP_DIR
+            BACKUP_DIR="/home/cicd/backups/\$(date +%Y%m%d_%H%M%S)"
+            mkdir -p \$BACKUP_DIR
           
             if [ -d "/home/cicd/production" ]; then
-              cp -r /home/cicd/production $BACKUP_DIR/
-              echo "✅ Backup créé dans $BACKUP_DIR"
+              cp -r /home/cicd/production \$BACKUP_DIR/
+              echo "✅ Backup créé dans \$BACKUP_DIR"
             fi
           
-            if command -v docker &> /dev/null; then
-              docker exec cicd_project_mysql_prod mysqldump -u root -p$DATABASE_ROOT_PASSWORD cicd_project_prod > $BACKUP_DIR/database.sql || true
+            # Backup de la base de données si possible
+            if command -v docker &> /dev/null && docker ps | grep mysql; then
+              docker exec \$(docker ps --format "table {{.Names}}" | grep mysql | head -1) mysqldump -u root -p${{ secrets.DATABASE_ROOT_PASSWORD }} ${{ env.PROJECT_NAME }}_prod > \$BACKUP_DIR/database.sql 2>/dev/null || echo "Warning: Database backup failed"
             fi
           EOF
+
+      - name: Upload production package to server
+        run: |
+          echo "📦 Transfert du package de production"
+          
+          sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' rsync -avz --delete \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            production-deployment.tar.gz ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}:/home/cicd/
 
       - name: Deploy to production server
         run: |
           echo "🚀 Déploiement vers production sur ${{ secrets.PROD_SSH_HOST }}"
           
           sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
-            ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} \
-            'mkdir -p /home/cicd/production'
-          
-          sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' rsync -avz --delete \
-            -e "ssh -o StrictHostKeyChecking=no" \
-            production-deployment.tar.gz ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}:/home/cicd/
-          
-          sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'EOF'
+            set -e
+          
+            # Configuration des variables d'environnement
+            export PROJECT_NAME=${{ env.PROJECT_NAME }}
+            export DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}
+            export DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}
+          
+            mkdir -p /home/cicd/production
             cd /home/cicd
           
+            # Extraction du package
             tar -xzf production-deployment.tar.gz -C production/
             cd production
           
             echo "🔄 Mise à jour en cours..."
           
+            # Build des images
             docker-compose build
           
+            # Démarrage des services
             docker-compose up -d --force-recreate --remove-orphans
           
             echo "⏳ Attente du démarrage des services..."
             sleep 30
           
+            # Vérification du statut
             docker-compose ps
             echo "✅ Déploiement terminé"
           EOF
@@ -397,23 +571,32 @@ jobs:
           sleep 60 
           
           echo "Test API health endpoint..."
-          curl -f http://212.83.130.245:4001/health || {
+          if curl -f --max-time 10 http://212.83.130.245:4001/health; then
+            echo "✅ API health check passed"
+          else
             echo "❌ API health check failed"
             exit 1
-          }
+          fi
           
           echo "Test frontend availability..."
-          curl -f http://212.83.130.245:4000 || {
+          if curl -f --max-time 10 http://212.83.130.245:4000; then
+            echo "✅ Frontend check passed"
+          else
             echo "❌ Frontend check failed"
             exit 1
-          }
+          fi
           
           echo "Test de performance basique..."
           response_time=$(curl -o /dev/null -s -w "%{time_total}" http://212.83.130.245:4001/health)
           echo "Temps de réponse API: ${response_time}s"
           
-          if (( $(echo "$response_time > 2.0" | bc -l) )); then
-            echo "⚠️ API response time is high: ${response_time}s"
+          # Vérification du temps de réponse (compatible avec différents systèmes)
+          if command -v bc &> /dev/null; then
+            if (( $(echo "$response_time > 2.0" | bc -l) )); then
+              echo "⚠️ API response time is high: ${response_time}s"
+            fi
+          else
+            echo "⚠️ bc not available, skipping response time check"
           fi
           
           echo "✅ Déploiement production vérifié et fonctionnel"
@@ -439,7 +622,7 @@ jobs:
               "project": "${{ env.PROJECT_NAME }}",
               "version": "${{ github.ref_name }}",
               "environment": "production"
-            }'
+            }' || echo "Webhook notification failed"
 
   notify_webhook_failure:
     if: failure()
@@ -454,4 +637,4 @@ jobs:
               "message": "❌ Échec du pipeline CI/CD",
               "project": "${{ env.PROJECT_NAME }}",
               "branch": "${{ github.ref_name }}"
-            }'
+            }' || echo "Webhook notification failed"
