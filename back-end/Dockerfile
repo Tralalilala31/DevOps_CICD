@@ -1,8 +1,6 @@
-FROM node:20-alpine as dev
+FROM node:20-alpine AS base
 
-WORKDIR /app
-COPY . .
-RUN npm install
-
-EXPOSE 5000
-CMD [ "npm", "run", "dev" ]
+FROM base AS dev
+EXPOSE 3000
+ENV NODE_ENV=development
+CMD ["sh", "-c", "npm install && npm run dev"]

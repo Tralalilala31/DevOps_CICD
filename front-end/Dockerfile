@@ -1,8 +1,7 @@
-FROM node:20-alpine as dev
 
-WORKDIR /app
-COPY . .
-RUN npm install
+FROM node:20-alpine AS base
+
+
+FROM base AS dev
 EXPOSE 4200
-
-CMD ["npx", "ng", "serve", "--host", "0.0.0.0"]
+CMD ["sh", "-c", "npm install && npm run start"]
