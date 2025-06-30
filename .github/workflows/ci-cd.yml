@@ -219,7 +219,7 @@ jobs:
           cp -r front-end/dist deploy/staging/frontend
           cp -r back-end deploy/staging/
           cp .env.staging deploy/staging/.env
-          cp docker-compose.staging.yml deploy/staging/docker-compose.yml
+          cp compose.staging.yml deploy/staging/compose.yml
           
           tar -czf staging-deployment.tar.gz -C deploy/staging .
 
