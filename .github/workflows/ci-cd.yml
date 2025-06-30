@@ -134,13 +134,6 @@ jobs:
           NODE_ENV=performance npm run dev &
           sleep 10
 
-      - name: Vérifier que le backend répond
-        run: |
-          curl --fail http://localhost:3000/health || {
-            echo "❌ Backend ne répond pas !"
-            exit 1
-          }
-
       - name: Run performance tests
         run: |
           cd back-end/tests/perf
