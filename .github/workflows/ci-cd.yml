@@ -325,10 +325,11 @@ jobs:
               volumes:
                 - mysql-data:/var/lib/mysql
               healthcheck:
-                test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+                test: ["CMD-SHELL", "mysqladmin ping -h localhost -uadmin -p${DATABASE_ADMIN_PASSWORD}"]
+                start_period: 15s
                 interval: 10s
                 timeout: 5s
-                retries: 5
+                retries: 10
           
           volumes:
             mysql-data:
