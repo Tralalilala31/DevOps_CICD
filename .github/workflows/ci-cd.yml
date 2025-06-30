@@ -136,7 +136,7 @@ jobs:
 
       - name: Vérifier que le backend répond
         run: |
-          curl --fail http://localhost:5000/health || {
+          curl --fail http://localhost:3000/health || {
             echo "❌ Backend ne répond pas !"
             exit 1
           }
