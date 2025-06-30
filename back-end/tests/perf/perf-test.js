@@ -1,91 +1,55 @@
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
-
-const http = require("http");
+import http from 'http';
 
 const URL = process.env.API_URL || "http://localhost:3000/api/users";
 
 // Fonction pour mesurer le temps de réponse
-
 function testPerf(url, method = "GET", body = null) {
-
     console.log(`🚀 Test [${method}] sur ${url}`);
 
     const options = {
-
         method,
-
         headers: {
-
             "Content-Type": "application/json"
-
         }
-
     };
 
     const start = Date.now();
 
     const req = http.request(url, options, (res) => {
-
         const duration = Date.now() - start;
-
         console.log(`✅ ${method} ${url} en ${duration}ms (status ${res.statusCode})`);
-
     });
 
     req.on("error", (err) => {
-
         console.error(`❌ Erreur sur ${method} ${url} :`, err.message);
-
     });
 
     if (body) {
-
         req.write(JSON.stringify(body));
-
     }
 
     req.end();
-
 }
 
-// 🔹 1. Test GET tous les utilisateurs
-
+// Tests unitaires de performance
 testPerf(URL);
-
-// 🔹 2. Test GET sur un ID (à adapter si besoin)
-
 testPerf(`${URL}/4d828277-8834-44ca-8c07-3d0fb9e13211`);
-
-// 🔹 3. Test POST (ajout)
-
 testPerf(URL, "POST", {
-
     nom: "Perf",
-
     prenom: "Test",
-
     email: "perf@test.com"
-
 });
-
-// 🔹 4. Test PUT (modification)
-
 testPerf(`${URL}/7080001c-52f7-4728-8648-8f56a8cd3c39`, "PUT", {
-
     nom: "PerfEdit",
-
     prenom: "Updated",
-
     email: "edit@test.com"
-
 });
-
-// 🔹 5. Test DELETE (⚠️ optionnel : à commenter si tu veux garder l’entrée)
-
 testPerf(`${URL}/7080001c-52f7-4728-8648-8f56a8cd3c39`, "DELETE");
 
-const baseUrl = 'http://localhost:3000/api/users'; // Remplace si nécessaire
+// Génération en masse
+const baseUrl = URL;
 const total = 100;
 
 const generateRandomMember = () => ({
@@ -109,3 +73,8 @@ const addMembers = async () => {
     const end = Date.now();
     console.log(`⏱️ Temps total pour ${total} ajouts : ${(end - start) / 1000}s`);
 };
+
+// Lance l'import massif après 5 secondes (laisser le temps au serveur de monter)
+setTimeout(() => {
+    addMembers();
+}, 5000);
