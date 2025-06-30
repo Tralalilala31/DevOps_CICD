@@ -252,16 +252,16 @@ jobs:
             ~/.local/bin/docker-compose ps
           EOF
 
-          - name: Verify staging deployment
-            run: |
-              echo "🔍 Vérification du déploiement staging"
-              sleep 30
-              
-              curl -f http://212.83.130.245:3001/health || echo "⚠️ API health check failed"
-              
-              curl -f http://212.83.130.245:3000 || echo "⚠️ Frontend check failed"
-              
-              echo "✅ Déploiement staging terminé"
+      - name: Verify staging deployment
+        run: |
+          echo "🔍 Vérification du déploiement staging"
+          sleep 30
+          
+          curl -f http://212.83.130.245:3001/health || echo "⚠️ API health check failed"
+          
+          curl -f http://212.83.130.245:3000 || echo "⚠️ Frontend check failed"
+          
+          echo "✅ Déploiement staging terminé"
 
   deploy_production:
     needs: deploy_staging
