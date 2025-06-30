@@ -216,13 +216,68 @@ jobs:
         run: |
           mkdir -p deploy/staging
           
-          # Copier les fichiers construits
-          cp -r front-end/dist deploy/staging/frontend
+          # Copier la structure complète des applications
           cp -r back-end deploy/staging/
+          cp -r front-end deploy/staging/
           
-          # Copier les Dockerfiles
-          cp front-end/Dockerfile deploy/staging/frontend/ 2>/dev/null || echo "Warning: Frontend Dockerfile not found"
-          cp back-end/Dockerfile deploy/staging/back-end/ 2>/dev/null || echo "Warning: Backend Dockerfile not found"
+          # Créer les Dockerfiles s'ils n'existent pas
+          if [ ! -f "back-end/Dockerfile" ]; then
+            echo "Creating backend Dockerfile..."
+            cat > deploy/staging/back-end/Dockerfile << 'DOCKERFILE_EOF'
+          FROM node:20-alpine
+          
+          WORKDIR /app
+          
+          COPY package*.json ./
+          RUN npm ci --only=production
+          
+          COPY . .
+          
+          ENV NODE_ENV=staging
+          ENV PORT=3001
+          
+          EXPOSE 3001
+          
+          RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+          RUN chown -R nextjs:nodejs /app
+          USER nextjs
+          
+          CMD ["npm", "start"]
+          DOCKERFILE_EOF
+          else
+            cp back-end/Dockerfile deploy/staging/back-end/
+          fi
+          
+          if [ ! -f "front-end/Dockerfile" ]; then
+            echo "Creating frontend Dockerfile..."
+            cat > deploy/staging/front-end/Dockerfile << 'DOCKERFILE_EOF'
+          FROM node:20-alpine AS builder
+          
+          WORKDIR /app
+          COPY package*.json ./
+          RUN npm ci
+          COPY . .
+          RUN npm run build
+          
+          FROM nginx:alpine
+          COPY --from=builder /app/dist /usr/share/nginx/html
+          
+          RUN echo 'server {' > /etc/nginx/conf.d/default.conf && \
+              echo '    listen 80;' >> /etc/nginx/conf.d/default.conf && \
+              echo '    server_name localhost;' >> /etc/nginx/conf.d/default.conf && \
+              echo '    root /usr/share/nginx/html;' >> /etc/nginx/conf.d/default.conf && \
+              echo '    index index.html;' >> /etc/nginx/conf.d/default.conf && \
+              echo '    location / {' >> /etc/nginx/conf.d/default.conf && \
+              echo '        try_files $uri $uri/ /index.html;' >> /etc/nginx/conf.d/default.conf && \
+              echo '    }' >> /etc/nginx/conf.d/default.conf && \
+              echo '}' >> /etc/nginx/conf.d/default.conf
+          
+          EXPOSE 80
+          CMD ["nginx", "-g", "daemon off;"]
+          DOCKERFILE_EOF
+          else
+            cp front-end/Dockerfile deploy/staging/front-end/
+          fi
           
           # Copier les fichiers de configuration
           cp .env.staging deploy/staging/.env
@@ -253,7 +308,7 @@ jobs:
           
             frontend:
               build:
-                context: ./frontend
+                context: ./front-end
                 dockerfile: Dockerfile
               ports:
                 - "3000:80"
@@ -313,9 +368,13 @@ jobs:
               chmod +x ~/.local/bin/docker-compose
             fi
           
-            # Création du répertoire de staging
+            # Création du répertoire de staging et nettoyage
             mkdir -p /home/cicd/staging
             cd /home/cicd
+          
+            # Suppression des anciens fichiers de configuration
+            rm -f /home/cicd/staging/compose.yml
+            rm -f /home/cicd/staging/docker-compose.override.yml
           
             # Extraction du package
             tar -xzf staging-deployment.tar.gz -C staging/
@@ -426,13 +485,68 @@ jobs:
         run: |
           mkdir -p deploy/production
           
-          # Copier les fichiers construits
-          cp -r front-end/dist deploy/production/frontend
+          # Copier la structure complète des applications
           cp -r back-end deploy/production/
+          cp -r front-end deploy/production/
           
-          # Copier les Dockerfiles
-          cp front-end/Dockerfile deploy/production/frontend/ 2>/dev/null || echo "Warning: Frontend Dockerfile not found"
-          cp back-end/Dockerfile deploy/production/back-end/ 2>/dev/null || echo "Warning: Backend Dockerfile not found"
+          # Créer les Dockerfiles s'ils n'existent pas
+          if [ ! -f "back-end/Dockerfile" ]; then
+            echo "Creating backend Dockerfile for production..."
+            cat > deploy/production/back-end/Dockerfile << 'DOCKERFILE_EOF'
+          FROM node:20-alpine
+          
+          WORKDIR /app
+          
+          COPY package*.json ./
+          RUN npm ci --only=production
+          
+          COPY . .
+          
+          ENV NODE_ENV=production
+          ENV PORT=4001
+          
+          EXPOSE 4001
+          
+          RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+          RUN chown -R nextjs:nodejs /app
+          USER nextjs
+          
+          CMD ["npm", "start"]
+          DOCKERFILE_EOF
+          else
+            cp back-end/Dockerfile deploy/production/back-end/
+          fi
+          
+          if [ ! -f "front-end/Dockerfile" ]; then
+            echo "Creating frontend Dockerfile for production..."
+            cat > deploy/production/front-end/Dockerfile << 'DOCKERFILE_EOF'
+          FROM node:20-alpine AS builder
+          
+          WORKDIR /app
+          COPY package*.json ./
+          RUN npm ci
+          COPY . .
+          RUN npm run build
+          
+          FROM nginx:alpine
+          COPY --from=builder /app/dist /usr/share/nginx/html
+          
+          RUN echo 'server {' > /etc/nginx/conf.d/default.conf && \
+              echo '    listen 80;' >> /etc/nginx/conf.d/default.conf && \
+              echo '    server_name localhost;' >> /etc/nginx/conf.d/default.conf && \
+              echo '    root /usr/share/nginx/html;' >> /etc/nginx/conf.d/default.conf && \
+              echo '    index index.html;' >> /etc/nginx/conf.d/default.conf && \
+              echo '    location / {' >> /etc/nginx/conf.d/default.conf && \
+              echo '        try_files $uri $uri/ /index.html;' >> /etc/nginx/conf.d/default.conf && \
+              echo '    }' >> /etc/nginx/conf.d/default.conf && \
+              echo '}' >> /etc/nginx/conf.d/default.conf
+          
+          EXPOSE 80
+          CMD ["nginx", "-g", "daemon off;"]
+          DOCKERFILE_EOF
+          else
+            cp front-end/Dockerfile deploy/production/front-end/
+          fi
           
           # Copier les fichiers de configuration
           cp .env.production deploy/production/.env
@@ -464,7 +578,7 @@ jobs:
           
             frontend:
               build:
-                context: ./frontend
+                context: ./front-end
                 dockerfile: Dockerfile
               ports:
                 - "4000:80"
@@ -544,6 +658,10 @@ jobs:
           
             mkdir -p /home/cicd/production
             cd /home/cicd
+          
+            # Suppression des anciens fichiers de configuration conflictuels
+            rm -f /home/cicd/production/compose.yml
+            rm -f /home/cicd/production/docker-compose.override.yml
           
             # Extraction du package
             tar -xzf production-deployment.tar.gz -C production/
