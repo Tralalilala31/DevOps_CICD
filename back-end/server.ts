@@ -5,12 +5,27 @@ import userRoutes from "./routes/user";
 import { connectDB } from "./config/database";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const NODE_ENV = process.env.NODE_ENV || "development";
+const PORT = 3000;
+const { NODE_ENV, FRONTEND_URL } = process.env;
+
+// Verification des variables d'environnement
+if (
+  !NODE_ENV ||
+  (NODE_ENV !== "development" &&
+    NODE_ENV !== "production" &&
+    NODE_ENV !== "staging")
+) {
+  throw new Error("La variable d'environnement NODE_ENV n'est pas définie.");
+}
+if (!FRONTEND_URL) {
+  throw new Error(
+    "La variable d'environnement FRONTEND_URL n'est pas définie."
+  );
+}
 
 // Configuration CORS
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "http://localhost:4200",
+  origin: FRONTEND_URL,
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -84,11 +99,10 @@ const startServer = async () => {
     await connectDB();
 
     // Démarrage du serveur
-    server.listen(PORT, () => {
-      console.log(`🚀 Serveur démarré sur le port ${PORT}`);
-      console.log(`📍 Environnement: ${NODE_ENV}`);
-      console.log(`🌐 URL: http://localhost:${PORT}`);
-      console.log(`❤️  Santé: http://localhost:${PORT}/health`);
+    server.listen(PORT, "0.0.0.0", () => {
+      console.log(
+        `🚀 Serveur démarré sur le port ${PORT} (environnement de ${NODE_ENV})`
+      );
     });
   } catch (error) {
     console.error("❌ Erreur lors du démarrage du serveur:", error);

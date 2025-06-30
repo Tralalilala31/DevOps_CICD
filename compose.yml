@@ -1,0 +1,52 @@
+services:
+  backend:
+    build:
+      context: ./back-end
+    ports:
+      - 3000:3000
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${PROJECT_NAME}
+      DB_USER: admin
+      DB_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
+      FRONTEND_URL: "http://frontend:4200"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build: ./front-end
+    ports:
+      - "80:4200"
+    depends_on:
+      - backend
+
+  mysql:
+    image: mysql:${MYSQL_VERSION}
+    environment:
+      MYSQL_DATABASE: ${PROJECT_NAME}
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      start_period: 5s
+      interval: 5s
+      timeout: 3s
+      retries: 4
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    environment:
+      PMA_HOST: mysql
+    ports:
+      - 8080:80
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
