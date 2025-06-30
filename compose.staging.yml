@@ -5,7 +5,6 @@ services:
     build:
       context: ./back-end
       dockerfile: Dockerfile
-      target: staging
     ports:
       - "3001:3001"
     environment:
