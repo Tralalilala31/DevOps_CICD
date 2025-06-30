@@ -16,7 +16,6 @@ services:
     build:
       context: ./front-end
       dockerfile: Dockerfile
-      target: staging
     ports:
       - "3000:80"
     depends_on:
