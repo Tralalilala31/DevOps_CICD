@@ -57,24 +57,23 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Configure backend .env with sed
+      - name: Générer le fichier .env pour le backend
         run: |
           cd back-end
-          cp .env.example .env
+          echo "PROJECT_NAME=${{ env.PROJECT_NAME }}" > .env
+          echo "DATABASE_ADMIN_USER=${{ secrets.DATABASE_ADMIN_USER }}" >> .env
+          echo "DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}" >> .env
+          echo "DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_PORT=3306" >> .env
+          echo "DB_USER=${{ secrets.DATABASE_ADMIN_USER }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}" >> .env
+          echo "DB_NAME=${{ env.PROJECT_NAME }}" >> .env
+          echo "NODE_ENV=test" >> .env
+          echo "FRONTEND_URL=http://localhost:4200" >> .env
           
-          sed -i "s/PROJECT_NAME=.*/PROJECT_NAME=${{ env.PROJECT_NAME }}/" .env
-          sed -i "s/DATABASE_ADMIN_USER=.*/DATABASE_ADMIN_USER=${{ secrets.DATABASE_ADMIN_USER }}/" .env
-          sed -i "s/DATABASE_ADMIN_PASSWORD=.*/DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}/" .env
-          sed -i "s/DATABASE_ROOT_PASSWORD=.*/DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}/" .env
-          sed -i "s/DB_HOST=.*/DB_HOST=127.0.0.1/" .env
-          sed -i "s/DB_PORT=.*/DB_PORT=3306/" .env
-          sed -i "s/DB_USER=.*/DB_USER=${{ secrets.DATABASE_ADMIN_USER }}/" .env
-          sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}/" .env
-          sed -i "s/DB_NAME=.*/DB_NAME=${{ env.PROJECT_NAME }}/" .env
-          sed -i "s/NODE_ENV=.*/NODE_ENV=test/" .env
-          
-          echo "=== Configuration .env générée ==="
-          cat .env | grep -v PASSWORD | grep -v SECRET  
+          echo "=== Contenu du fichier .env généré (sans secrets) ==="
+          cat .env | grep -v PASSWORD | grep -v SECRET
 
       - name: Install backend dependencies
         run: |
