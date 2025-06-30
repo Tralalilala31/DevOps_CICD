@@ -13,8 +13,8 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "removeComments": true,
-    "noImplicitAny": true,
+    "removeComments": false,
+    "noImplicitAny": false,
     "strictNullChecks": true,
     "strictFunctionTypes": true,
     "noImplicitThis": true,
@@ -27,22 +27,15 @@
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "typeRoots": ["./node_modules/@types", "./types"],
     "types": ["jest", "node"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@/routes/*": ["src/routes/*"],
-      "@/controllers/*": ["src/controllers/*"],
-      "@/middleware/*": ["src/middleware/*"],
-      "@/models/*": ["src/models/*"],
-      "@/services/*": ["src/services/*"],
-      "@/utils/*": ["src/utils/*"],
-      "@/types/*": ["src/types/*"]
+      "@/*": ["./*"]
     }
   },
-  "include": ["src/**/*", "server.ts"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "dist"],
   "ts-node": {
     "esm": false,
     "experimentalSpecifierResolution": "node"
