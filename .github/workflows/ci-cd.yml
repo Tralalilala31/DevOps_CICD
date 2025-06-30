@@ -228,40 +228,40 @@ jobs:
           echo "🟢 Déploiement vers staging sur ${{ secrets.STAGING_SSH_HOST }}"
           
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
-            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << EOF
-            mkdir -p /home/cicd/staging
-            echo '${{ secrets.STAGING_SSH_PASSWORD }}' | sudo -S systemctl stop staging-app || true
-          EOF
-        
-          sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' rsync -avz --delete \
-            -e "ssh -o StrictHostKeyChecking=no" \
-            staging-deployment.tar.gz ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/
-          
-          sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
-            cd /home/cicd
+            set -e
           
+            # Préparation dossier
+            mkdir -p /home/cicd/staging
+          
+            # Installer docker-compose si manquant
+            if ! command -v docker-compose &> /dev/null; then
+              echo "🧩 Installation de docker-compose..."
+              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+            fi
+          
+            # Extraction et déploiement
+            cd /home/cicd
             tar -xzf staging-deployment.tar.gz -C staging/
             cd staging
           
             docker-compose down || true
-          
             docker-compose up --build -d
-          
             sleep 10
             docker-compose ps
           EOF
-
-      - name: Verify staging deployment
-        run: |
-          echo "🔍 Vérification du déploiement staging"
-          sleep 30
-          
-          curl -f http://212.83.130.245:3001/health || echo "⚠️ API health check failed"
-          
-          curl -f http://212.83.130.245:3000 || echo "⚠️ Frontend check failed"
-          
-          echo "✅ Déploiement staging terminé"
+    
+          - name: Verify staging deployment
+            run: |
+              echo "🔍 Vérification du déploiement staging"
+              sleep 30
+              
+              curl -f http://212.83.130.245:3001/health || echo "⚠️ API health check failed"
+              
+              curl -f http://212.83.130.245:3000 || echo "⚠️ Frontend check failed"
+              
+              echo "✅ Déploiement staging terminé"
 
   deploy_production:
     needs: deploy_staging
