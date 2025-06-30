@@ -166,7 +166,7 @@ jobs:
   deploy_staging:
     needs: [build_frontend, build_test_backend]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/develop'
     environment:
       name: staging
       url: http://212.83.130.245:3000
