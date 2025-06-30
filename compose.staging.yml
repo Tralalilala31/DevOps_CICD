@@ -1,14 +1,40 @@
 name: ${PROJECT_NAME}-staging
+
 services:
   backend:
     build:
-      target: staging
+      context: ./back-end
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
     environment:
       NODE_ENV: staging
+    depends_on:
+      - mysql
 
   frontend:
     build:
-      target: staging
+      context: ./front-end
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${PROJECT_NAME}_staging
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   mysql-data:
