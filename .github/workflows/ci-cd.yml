@@ -228,9 +228,11 @@ jobs:
           echo "🟢 Déploiement vers staging sur ${{ secrets.STAGING_SSH_HOST }}"
           
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
-            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} \
-            'mkdir -p /home/cicd/staging && sudo systemctl stop staging-app || true'
-          
+            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << EOF
+            mkdir -p /home/cicd/staging
+            echo '${{ secrets.STAGING_SSH_PASSWORD }}' | sudo -S systemctl stop staging-app || true
+          EOF
+        
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' rsync -avz --delete \
             -e "ssh -o StrictHostKeyChecking=no" \
             staging-deployment.tar.gz ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/
