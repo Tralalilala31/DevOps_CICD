@@ -132,8 +132,15 @@ jobs:
       - name: Start backend server in background
         run: |
           cd back-end
-          npm run dev &   # ou `npm run start` si ton script de prod est `start`
-          sleep 10        # donne le temps au serveur de démarrer
+          NODE_ENV=performance npm run dev &
+          sleep 10
+
+      - name: Vérifier que le backend répond
+        run: |
+          curl --fail http://localhost:5000/health || {
+            echo "❌ Backend ne répond pas !"
+            exit 1
+          }
 
       - name: Run performance tests
         run: |
