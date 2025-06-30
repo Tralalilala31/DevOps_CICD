@@ -187,7 +187,7 @@ jobs:
 
       - name: Configure staging environment
         run: |
-          cat > .env.staging << EOF
+          echo > .env.staging << EOF
           PROJECT_NAME=${{ env.PROJECT_NAME }}
           NODE_ENV=staging
           DATABASE_ADMIN_USER=${{ secrets.DATABASE_ADMIN_USER }}
@@ -287,7 +287,7 @@ jobs:
         run: |
           umask 077
           
-          cat > .env.production << EOF
+          echo > .env.production << EOF
           PROJECT_NAME=${{ env.PROJECT_NAME }}
           NODE_ENV=production
           
