@@ -3,15 +3,16 @@ services:
     build:
       context: ./back-end
     ports:
-      - 3000:3000
+      - ${PORT_BACK}:3000
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
       DB_NAME: ${PROJECT_NAME}
       DB_USER: admin
       DB_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
+      PORT: ${PORT_BACK}
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:3000/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:${PORT_BACK}/health"]
       interval: 5s
       timeout: 5s
       retries: 6
@@ -23,7 +24,7 @@ services:
   frontend:
     build: ./front-end
     ports:
-      - 80:4200
+      - ${PORT_FRONT}:4200
     depends_on:
       backend:
         condition: service_healthy
@@ -49,7 +50,7 @@ services:
     environment:
       PMA_HOST: mysql
     ports:
-      - 8080:80
+      - ${PORT_PHPMYADMIN}:80
     depends_on:
       mysql:
         condition: service_healthy
