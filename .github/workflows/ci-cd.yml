@@ -25,7 +25,7 @@ jobs:
               -e "s|VITE_APP_NAME=.*|VITE_APP_NAME=${{ env.PROJECT_NAME }}|g" \
               -e "s|VITE_APP_VERSION=.*|VITE_APP_VERSION=${{ github.ref_name }}|g" \
               -e "s|VITE_ENVIRONMENT=.*|VITE_ENVIRONMENT=ci|g" \
-            front-end/.env.template > front-end/.env
+            front-end/.env > front-end/.env
   
           echo "=== .env frontend ==="
           grep -v PASSWORD front-end/.env
@@ -46,7 +46,7 @@ jobs:
               -e "s|\${DATABASE_ADMIN_PASSWORD}|${{ secrets.DATABASE_ADMIN_PASSWORD }}|g" \
               -e "s|\${DATABASE_ROOT_PASSWORD}|${{ secrets.DATABASE_ROOT_PASSWORD }}|g" \
               -e "s|NODE_ENV=.*|NODE_ENV=test|g" \
-            back-end/.env.template > .env
+            back-end/.env > .env
   
           echo "=== .env backend test ==="
           grep -v PASSWORD .env
