@@ -12,10 +12,11 @@ services:
       DB_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
       PORT: ${PORT_BACK}
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:${PORT_BACK}/health"]
-      interval: 5s
+      test:
+        ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:${PORT_BACK}/health"]
+      interval: 10s
       timeout: 5s
-      retries: 6
+      retries: 10
       start_period: 5s
     depends_on:
       mysql:
