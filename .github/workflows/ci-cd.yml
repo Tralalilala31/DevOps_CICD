@@ -27,8 +27,22 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Builder le frontend via Docker Compose
-        run: docker compose build --wait
+      - name: Tester les services Docker sans configuration
+        run: |
+          echo "� Construction et démarrage des services..."
+          docker compose build
+          docker compose up -d --wait
+
+          echo "✅ Services healthy - Test réussi !"
+          docker compose ps
+
+      - name: Nettoyer l'environnement Docker
+        if: always()
+        run: |
+          echo "🧹 Nettoyage en cours..."
+          docker compose down -v --remove-orphans
+          docker system prune -f
+          echo "✅ Nettoyage terminé"
 
   backend_tests:
     runs-on: ubuntu-latest
