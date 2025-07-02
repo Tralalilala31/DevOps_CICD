@@ -63,8 +63,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Lancer les E2E via Docker
-        run: docker compose -f compose.yml up --build --abort-on-container-exit e2e
+      - name: Lancer les tests E2E
+        run: |
+          docker compose -f compose.yml up -d --build
+          npm ci
+          npm run e2e
 
       - name: Nettoyage
         if: always()
