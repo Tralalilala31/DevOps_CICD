@@ -91,7 +91,7 @@ jobs:
             --exclude='*.tar.gz' \
             .
 
-      - name: Transférer les fichiers
+      - name: Importer le code
         run: |
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' scp -o StrictHostKeyChecking=no \
             staging-deployment.tar.gz \
@@ -101,6 +101,7 @@ jobs:
         run: |
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
+            rm -rf /home/cicd/staging/*
             tar -xzf staging-deployment.tar.gz -C /home/cicd/staging
             cd /home/cicd/staging
             
@@ -174,6 +175,7 @@ jobs:
         run: |
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
+            rm -rf /home/cicd/staging/*
             tar -xzf staging-deployment.tar.gz -C /home/cicd/staging
             cd /home/cicd/staging
             
