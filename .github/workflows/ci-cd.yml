@@ -1,8 +1,8 @@
 on:
   push:
-    branches: ['*']
+    branches: ['**']
   pull_request:
-    branches: ['*']
+    branches: ['**']
   schedule:
     - cron: '0 22 * * *'
 
@@ -14,160 +14,61 @@ env:
 jobs:
   build_frontend:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup environment variables for frontend
-        run: |
-          cat > front-end/.env << EOF
-          VITE_API_URL=${{ secrets.FRONTEND_API_URL }}
-          VITE_APP_NAME=${{ env.PROJECT_NAME }}
-          VITE_APP_VERSION=${{ github.ref_name }}
-          VITE_ENVIRONMENT=ci
-          EOF
-
-      - name: Install dependencies & build frontend
-        run: |
-          cd front-end
-          npm ci
-          npm run build
+      - name: Builder le frontend via Docker Compose
+        run: docker compose build frontend
 
   build_test_backend:
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.0.32
-        env:
-          MYSQL_DATABASE: ${{ env.PROJECT_NAME }}
-          MYSQL_USER: ${{ secrets.DATABASE_ADMIN_USER }}
-          MYSQL_PASSWORD: ${{ secrets.DATABASE_ADMIN_PASSWORD }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
-        ports: ['3306:3306']
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - name: Générer le fichier .env pour le backend
-        run: |
-          cd back-end
-          echo "PROJECT_NAME=${{ env.PROJECT_NAME }}" > .env
-          echo "DATABASE_ADMIN_USER=${{ secrets.DATABASE_ADMIN_USER }}" >> .env
-          echo "DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}" >> .env
-          echo "DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}" >> .env
-          echo "DB_HOST=127.0.0.1" >> .env
-          echo "DB_PORT=3306" >> .env
-          echo "DB_USER=${{ secrets.DATABASE_ADMIN_USER }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}" >> .env
-          echo "DB_NAME=${{ env.PROJECT_NAME }}" >> .env
-          echo "NODE_ENV=test" >> .env
-          echo "FRONTEND_URL=http://localhost:4200" >> .env
-          
-          echo "=== Contenu du fichier .env généré (sans secrets) ==="
-          cat .env | grep -v PASSWORD | grep -v SECRET
-
-      - name: Install backend dependencies
-        run: |
-          cd back-end
-          npm ci
+      - name: Lancer l'environnement en fond
+        run: docker compose up -d --build
 
       - name: Run unit and integration tests
         run: |
-          cd back-end
-          npm run test:unit
-          npm run test:integration
+          docker compose up -d --build
+          docker compose exec backend npm run test:unit
+
+      - name: Nettoyage
+        run: docker compose down --volumes
 
   perf_tests:
     needs: build_test_backend
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.0.32
-        env:
-          MYSQL_DATABASE: ${{ env.PROJECT_NAME }}
-          MYSQL_USER: ${{ secrets.DATABASE_ADMIN_USER }}
-          MYSQL_PASSWORD: ${{ secrets.DATABASE_ADMIN_PASSWORD }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
-        ports: ['3306:3306']
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Generate .env for backend
-        run: |
-          cd back-end
-          cat > .env << EOF
-          PROJECT_NAME=${{ env.PROJECT_NAME }}
-          DATABASE_ADMIN_USER=${{ secrets.DATABASE_ADMIN_USER }}
-          DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}
-          DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}
-          DB_HOST=127.0.0.1
-          DB_PORT=3306
-          DB_USER=${{ secrets.DATABASE_ADMIN_USER }}
-          DB_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}
-          DB_NAME=${{ env.PROJECT_NAME }}
-          NODE_ENV=performance
-          EOF
+      - name: Start containers for perf tests
+        run: docker compose up -d --build
 
-      - name: Install backend dependencies
-        run: |
-          cd back-end
-          npm ci
+      - name: Run performance tests inside backend
+        run: docker compose exec backend node tests/perf/perf-test.js
 
-      - name: Start backend server in background
-        run: |
-          cd back-end
-          NODE_ENV=performance npm run dev &
-          sleep 10
-
-      - name: Run performance tests
-        run: |
-          cd back-end/tests/perf
-          npm ci
-          node perf-test.js
+      - name: Nettoyage
+        if: always()
+        run: docker compose down --volumes
 
   e2e_tests:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
     steps:
       - uses: actions/checkout@v3
 
-      - name: Configure docker-compose environment
-        run: |
-          sudo apt-get update && sudo apt-get install -y gettext-base
-          
-          export PROJECT_NAME=${{ env.PROJECT_NAME }}
-          export DATABASE_ADMIN_USER=${{ secrets.DATABASE_ADMIN_USER }}
-          export DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}
-          export DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}
-          
-          envsubst < docker-compose.template.yml > docker-compose.yml
+      - name: Lancer les E2E via Docker
+        run: docker compose -f compose.yml up --build --abort-on-container-exit e2e
 
-      - name: Setup E2E environment
-        run: |
-          docker-compose up -d
-          sleep 10
-
-      - name: Run E2E tests
-        run: |
-          cd e2e-tests
-          npm ci
-          npm run test:e2e
+      - name: Nettoyage
+        if: always()
+        run: docker compose -f compose.yml down --volumes
 
   deploy_staging:
     needs: [build_frontend, build_test_backend]
@@ -180,94 +81,85 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - name: Install sshpass for SSH authentication
+      - name: Install sshpass
         run: |
           sudo apt-get update
-          sudo apt-get install -y sshpass rsync
+          sudo apt-get install -y sshpass
 
-      - name: Configure staging environment
+      - name: Générer le fichier .env.staging depuis template
         run: |
-          echo > .env.staging << EOF
-          PROJECT_NAME=${{ env.PROJECT_NAME }}
-          NODE_ENV=staging
-          DATABASE_ADMIN_USER=${{ secrets.DATABASE_ADMIN_USER }}
-          DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}
-          DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}
-          DB_HOST=localhost
-          DB_PORT=3306
-          DB_NAME=${{ env.PROJECT_NAME }}_staging
-          APP_URL=http://212.83.130.245:3000
-          API_URL=http://212.83.130.245:3001
-          PORT=3001
-          FRONTEND_PORT=3000
-          EOF
+          sed -e "s|\${PROJECT_NAME}|${{ env.PROJECT_NAME }}|g" \
+              -e "s|\${DATABASE_ADMIN_USER}|${{ secrets.DATABASE_ADMIN_USER }}|g" \
+              -e "s|\${DATABASE_ADMIN_PASSWORD}|${{ secrets.DATABASE_ADMIN_PASSWORD }}|g" \
+              -e "s|\${DATABASE_ROOT_PASSWORD}|${{ secrets.DATABASE_ROOT_PASSWORD }}|g" \
+              -e "s|NODE_ENV=.*|NODE_ENV=staging|g" \
+              -e "s|DB_NAME=.*|DB_NAME=${{ env.PROJECT_NAME }}_staging|g" \
+              -e "s|APP_URL=.*|APP_URL=http://212.83.130.245:3000|g" \
+              -e "s|API_URL=.*|API_URL=http://212.83.130.245:3001|g" \
+              -e "s|PORT=.*|PORT=3001|g" \
+              -e "s|FRONTEND_PORT=.*|FRONTEND_PORT=3000|g" \
+            back-end/.env.template > .env.staging
 
-      - name: Build application for staging
-        run: |
-          cd front-end
-          npm ci
-          npm run build
-          cd ..
-          
-          cd back-end
-          npm ci
-          cd ..
-
-      - name: Create deployment package
+      - name: Créer le paquet de déploiement
         run: |
           mkdir -p deploy/staging
-          
-          cp -r front-end/dist deploy/staging/frontend
-          cp -r back-end deploy/staging/
-          cp .env.staging deploy/staging/.env
-          cp compose.yml deploy/staging/compose.yml
-          cp compose.override.yml deploy/staging/compose.override.yml
-          
+          cp -r front-end back-end .env.staging compose.yml deploy/staging/
           tar -czf staging-deployment.tar.gz -C deploy/staging .
 
-      - name: Deploy to staging server
+      - name: Déployer sur le serveur staging
         run: |
-          echo "🟢 Déploiement vers staging sur ${{ secrets.STAGING_SSH_HOST }}"
-          
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
+          
             set -e
-          
-            mkdir -p ~/.local/bin
-            export PATH=$HOME/.local/bin:$PATH
-          
-            if ! command -v docker-compose &> /dev/null; then
-            echo "🧩 Installation locale de docker-compose..."
-            curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o ~/.local/bin/docker-compose
-            chmod +x ~/.local/bin/docker-compose
+            mkdir -p /home/cicd/staging
+            cd /home/cicd
+  
+            if ! command -v docker &> /dev/null; then
+              echo "❌ Docker n'est pas installé"
+              exit 1
             fi
-          
+  
+            if ! docker compose version &> /dev/null; then
+              echo "🧩 Installation de docker compose v2..."
+              mkdir -p ~/.docker/cli-plugins
+              curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) \
+                -o ~/.docker/cli-plugins/docker-compose
+              chmod +x ~/.docker/cli-plugins/docker-compose
+            fi
+  
+            rm -rf staging/*
+          EOF
+
+      - name: Transférer les fichiers
+        run: |
+          sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' scp -o StrictHostKeyChecking=no \
+            staging-deployment.tar.gz \
+            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/
+
+      - name: Déployer les containers
+        run: |
+          sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
+            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
             cd /home/cicd
             tar -xzf staging-deployment.tar.gz -C staging/
             cd staging
           
-            ~/.local/bin/docker-compose down || true
-            ~/.local/bin/docker-compose up --build -d
+            docker compose down --volumes || true
+            cp .env.staging .env
+            docker compose -f compose.yml -f compose.prod.yml up -d --build
           
-            sleep 10
-            ~/.local/bin/docker-compose ps
+            echo "⌛ Attente du démarrage des services..."
+            docker compose ps
           EOF
 
-      - name: Verify staging deployment
+      - name: Vérification du déploiement
         run: |
-          echo "🔍 Vérification du déploiement staging"
+          echo "🔍 Vérification du staging"
           sleep 30
-          
-          curl -f http://212.83.130.245:3001/health || echo "⚠️ API health check failed"
-          
-          curl -f http://212.83.130.245:3000 || echo "⚠️ Frontend check failed"
-          
-          echo "✅ Déploiement staging terminé"
+          curl -f http://212.83.130.245:3001/health || echo "⚠️ API indisponible"
+          curl -f http://212.83.130.245:3000 || echo "⚠️ Frontend indisponible"
+          echo "✅ Staging opérationnel"
 
   deploy_production:
     needs: deploy_staging
@@ -280,154 +172,126 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - name: Install sshpass for SSH authentication
+      - name: Installer sshpass
         run: |
           sudo apt-get update
-          sudo apt-get install -y sshpass rsync
+          sudo apt-get install -y sshpass
 
-      - name: Configure production environment securely
+      - name: Générer `.env.production` depuis `.env.template`
         run: |
-          umask 077
-          
-          echo > .env.production << EOF
-          PROJECT_NAME=${{ env.PROJECT_NAME }}
-          NODE_ENV=production
-          
-          DATABASE_ADMIN_USER=${{ secrets.DATABASE_ADMIN_USER }}
-          DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}
-          DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}
-          DB_HOST=localhost
-          DB_PORT=3306
-          DB_NAME=${{ env.PROJECT_NAME }}_prod
-          
-          APP_URL=http://212.83.130.245:4000
-          API_URL=http://212.83.130.245:4001
-          PORT=4001
-          FRONTEND_PORT=4000
-          
-          APP_VERSION=${{ github.ref_name }}
-          BUILD_NUMBER=${{ github.run_number }}
-          COMMIT_SHA=${{ github.sha }}
-          
-          LOG_LEVEL=info
-          MAX_REQUEST_SIZE=10mb
-          RATE_LIMIT_WINDOW=900000
-          RATE_LIMIT_MAX=100
-          EOF
+          sed -e "s|\${PROJECT_NAME}|${{ env.PROJECT_NAME }}|g" \
+              -e "s|\${DATABASE_ADMIN_USER}|${{ secrets.DATABASE_ADMIN_USER }}|g" \
+              -e "s|\${DATABASE_ADMIN_PASSWORD}|${{ secrets.DATABASE_ADMIN_PASSWORD }}|g" \
+              -e "s|\${DATABASE_ROOT_PASSWORD}|${{ secrets.DATABASE_ROOT_PASSWORD }}|g" \
+              -e "s|NODE_ENV=.*|NODE_ENV=production|g" \
+              -e "s|DB_NAME=.*|DB_NAME=${{ env.PROJECT_NAME }}_prod|g" \
+              -e "s|APP_URL=.*|APP_URL=http://212.83.130.245:4000|g" \
+              -e "s|API_URL=.*|API_URL=http://212.83.130.245:4001|g" \
+              -e "s|PORT=.*|PORT=4001|g" \
+              -e "s|FRONTEND_PORT=.*|FRONTEND_PORT=4000|g" \
+            back-end/.env.template > .env.production
 
-      - name: Build application for production
-        run: |
-          cd front-end
-          npm ci
-          NODE_ENV=production npm run build
-          cd ..
-          
-          cd back-end
-          npm ci --production
-          cd ..
-
-      - name: Create production deployment package
+      - name: Créer le paquet de déploiement
         run: |
           mkdir -p deploy/production
-          
-          cp -r front-end/dist deploy/production/frontend
-          cp -r back-end deploy/production/
-          cp .env.production deploy/production/.env
-          cp docker-compose.production.yml deploy/production/docker-compose.yml
-          
-          mkdir -p deploy/production/scripts
-          cp scripts/backup-db.sh deploy/production/scripts/
-          cp scripts/health-check.sh deploy/production/scripts/
-          
+          cp -r front-end back-end compose.yml .env.production deploy/production/
           tar -czf production-deployment.tar.gz -C deploy/production .
 
-      - name: Backup current production (if exists)
+      - name: Backup de la production existante
         run: |
-          echo "💾 Sauvegarde de la production actuelle"
-          
           sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'EOF'
-            # Créer le dossier de backup avec timestamp
+          
+            set -e
+          
             BACKUP_DIR="/home/cicd/backups/$(date +%Y%m%d_%H%M%S)"
-            mkdir -p $BACKUP_DIR
+            mkdir -p "$BACKUP_DIR"
           
             if [ -d "/home/cicd/production" ]; then
-              cp -r /home/cicd/production $BACKUP_DIR/
-              echo "✅ Backup créé dans $BACKUP_DIR"
+              cp -r /home/cicd/production "$BACKUP_DIR/"
+              echo "✅ Dossier copié : $BACKUP_DIR"
             fi
           
-            if command -v docker &> /dev/null; then
-              docker exec cicd_project_mysql_prod mysqldump -u root -p$DATABASE_ROOT_PASSWORD cicd_project_prod > $BACKUP_DIR/database.sql || true
+            # Sauvegarde DB si conteneur existant
+            if docker ps --format '{{.Names}}' | grep -q cicd_project_mysql_prod; then
+              docker exec cicd_project_mysql_prod \
+                mysqldump -u root -p$DATABASE_ROOT_PASSWORD cicd_project_prod > "$BACKUP_DIR/db.sql" || true
+              echo "💾 Dump MySQL sauvegardé."
             fi
           EOF
 
-      - name: Deploy to production server
+      - name: Préparer le serveur distant
         run: |
-          echo "🚀 Déploiement vers production sur ${{ secrets.PROD_SSH_HOST }}"
-          
-          sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
-            ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} \
-            'mkdir -p /home/cicd/production'
-          
-          sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' rsync -avz --delete \
-            -e "ssh -o StrictHostKeyChecking=no" \
-            production-deployment.tar.gz ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}:/home/cicd/
-          
           sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'EOF'
-            cd /home/cicd
           
+            mkdir -p /home/cicd/production
+          
+            # Installer docker compose v2 si nécessaire
+            if ! docker compose version &> /dev/null; then
+              mkdir -p ~/.docker/cli-plugins
+              curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) \
+                -o ~/.docker/cli-plugins/docker-compose
+              chmod +x ~/.docker/cli-plugins/docker-compose
+            fi
+          
+            rm -rf /home/cicd/production/*
+          EOF
+
+      - name: Envoyer le paquet de déploiement
+        run: |
+          sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' scp -o StrictHostKeyChecking=no \
+            production-deployment.tar.gz \
+            ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}:/home/cicd/
+
+      - name: Déployer la nouvelle version
+        run: |
+          sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
+            ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'EOF'
+          
+            set -e
+          
+            cd /home/cicd
             tar -xzf production-deployment.tar.gz -C production/
             cd production
           
-            echo "🔄 Mise à jour en cours..."
+            cp .env.production .env
+            docker compose down --volumes || true
+            docker compose -f compose.yml -f compose.prod.yml up -d --build
           
-            docker-compose build
-          
-            docker-compose up -d --force-recreate --remove-orphans
-          
-            echo "⏳ Attente du démarrage des services..."
-            sleep 30
-          
-            docker-compose ps
-            echo "✅ Déploiement terminé"
+            echo "⏳ Attente du démarrage..."
+            docker compose ps
           EOF
 
-      - name: Run production health checks
+      - name: Vérifications santé de la prod
         run: |
           echo "🏥 Vérifications de santé production"
-          sleep 60 
           
-          echo "Test API health endpoint..."
+          echo "Test API..."
           curl -f http://212.83.130.245:4001/health || {
-            echo "❌ API health check failed"
+            echo "❌ API non disponible"
             exit 1
           }
           
-          echo "Test frontend availability..."
+          echo "Test Frontend..."
           curl -f http://212.83.130.245:4000 || {
-            echo "❌ Frontend check failed"
+            echo "❌ Frontend non disponible"
             exit 1
           }
           
-          echo "Test de performance basique..."
+          echo "Test temps de réponse..."
           response_time=$(curl -o /dev/null -s -w "%{time_total}" http://212.83.130.245:4001/health)
-          echo "Temps de réponse API: ${response_time}s"
+          echo "⏱ Temps réponse API : ${response_time}s"
           
           if (( $(echo "$response_time > 2.0" | bc -l) )); then
-            echo "⚠️ API response time is high: ${response_time}s"
+            echo "⚠️ Temps de réponse élevé"
           fi
           
-          echo "✅ Déploiement production vérifié et fonctionnel"
+          echo "✅ Déploiement production OK"
 
-      - name: Notify production deployment success
+      - name: Notifier le succès du déploiement
         run: |
-          echo "🎉 Production deployée avec succès!"
+          echo "🎉 Production déployée avec succès !"
           echo "Version: ${{ github.ref_name }}"
           echo "URL: http://212.83.130.245:4000"
 
