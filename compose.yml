@@ -22,7 +22,10 @@ services:
         condition: service_healthy
 
   frontend:
-    build: ./front-end
+    build: 
+      context: ./front-end
+      args:
+        API_URL: ${API_URL}
     ports:
       - ${PORT_FRONT}:4200
     depends_on:
