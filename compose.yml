@@ -10,7 +10,6 @@ services:
       DB_NAME: ${PROJECT_NAME}
       DB_USER: admin
       DB_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
-      FRONTEND_URL: "http://frontend:4200"
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:3000/health"]
       interval: 3s
