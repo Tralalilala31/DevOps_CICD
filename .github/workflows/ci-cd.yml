@@ -73,7 +73,6 @@ jobs:
   deploy_staging:
     needs: [build_frontend, build_test_backend]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop'
     environment:
       name: staging
       url: http://212.83.130.245:3000
@@ -86,19 +85,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y sshpass
 
-      - name: Générer le fichier .env.staging depuis template
+      - name: Générer .env.staging
         run: |
           sed -e "s|\${PROJECT_NAME}|${{ env.PROJECT_NAME }}|g" \
               -e "s|\${DATABASE_ADMIN_USER}|${{ secrets.DATABASE_ADMIN_USER }}|g" \
               -e "s|\${DATABASE_ADMIN_PASSWORD}|${{ secrets.DATABASE_ADMIN_PASSWORD }}|g" \
               -e "s|\${DATABASE_ROOT_PASSWORD}|${{ secrets.DATABASE_ROOT_PASSWORD }}|g" \
-              -e "s|NODE_ENV=.*|NODE_ENV=staging|g" \
-              -e "s|DB_NAME=.*|DB_NAME=${{ env.PROJECT_NAME }}_staging|g" \
-              -e "s|APP_URL=.*|APP_URL=http://212.83.130.245:3000|g" \
-              -e "s|API_URL=.*|API_URL=http://212.83.130.245:3001|g" \
-              -e "s|PORT=.*|PORT=3001|g" \
-              -e "s|FRONTEND_PORT=.*|FRONTEND_PORT=3000|g" \
-            back-end/.env.template > .env.staging
+              -e "s|\${NODE_ENV}|staging|g" \
+              -e "s|\${DB_NAME}|${{ env.PROJECT_NAME }}_staging|g" \
+              -e "s|\${APP_URL}|http://212.83.130.245:3000|g" \
+              -e "s|\${API_URL}|http://212.83.130.245:3001|g" \
+              -e "s|\${PORT}|3001|g" \
+              -e "s|\${FRONTEND_PORT}|3000|g" \
+              .env.template > back-end/.env.staging
 
       - name: Créer le paquet de déploiement
         run: |
