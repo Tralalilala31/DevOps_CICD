@@ -111,6 +111,7 @@ jobs:
           mkdir -p deploy/staging
           cp -r front-end back-end compose.yml deploy/staging/
           cp back-end/.env.staging deploy/staging/back-end/.env.staging
+          cp .env* compose*.yml deploy/staging/
           tar -czf staging-deployment.tar.gz -C deploy/staging .
 
       - name: Vérifier le contenu avant tar
