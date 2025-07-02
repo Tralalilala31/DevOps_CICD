@@ -38,12 +38,10 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Lancer l'environnement en fond
-        run: docker compose up -d --build
+        run: docker compose up --build backend
 
       - name: Run unit and integration tests
-        run: |
-          docker compose up -d --build
-          docker compose exec backend npm run test:unit
+        run: docker compose exec backend npm run test:unit
 
   perf_tests:
     needs: backend_tests
