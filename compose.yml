@@ -63,7 +63,7 @@ services:
     environment:
       PMA_HOST: mysql
     ports:
-      - ${PORT_PHPMYADMIN}:80
+      - ${PORT_PMA}:80
     depends_on:
       mysql:
         condition: service_healthy
