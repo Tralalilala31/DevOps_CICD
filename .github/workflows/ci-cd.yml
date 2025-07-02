@@ -101,10 +101,17 @@ jobs:
               -e "s|\${MYSQL_VERSION}|8.0|g" \
               .env.template > back-end/.env.staging
 
+      - name: Vérifier le contenu avant tar
+        run: |
+          ls -R deploy/staging/back-end
+          ls -R deploy/staging/front-end
+
+
       - name: Créer le paquet de déploiement
         run: |
           mkdir -p deploy/staging
-          cp -r front-end back-end back-end/.env.staging compose.yml deploy/staging/
+          cp -r front-end back-end compose.yml deploy/staging/
+          cp back-end/.env.staging deploy/staging/back-end/.env.staging
           tar -czf staging-deployment.tar.gz -C deploy/staging .
 
       - name: Nettoyer les ports en conflit sur le serveur staging
@@ -247,13 +254,6 @@ jobs:
             echo "📊 État final des conteneurs:"
             docker compose ps
           EOF
-
-      - name: 🔍 Logs backend (si échec)
-        if: failure()
-        run: |
-          sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
-            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} \
-            "cd /home/cicd/staging && docker compose logs backend --tail=100"
 
       - name: Vérification du déploiement avec les nouveaux ports
         run: |
