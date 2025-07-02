@@ -103,7 +103,7 @@ jobs:
               -e "s|DB_HOST=.*|DB_HOST=mysql|g" \
               -e "s|DB_PORT=.*|DB_PORT=3306|g" \
               -e "s|DB_USER=.*|DB_USER=${{ secrets.DATABASE_ADMIN_USER }}|g" \
-              -e "s|DB_PASSWORD=.*|DB_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}|g" \
+              -e "s|DB_PASSWORD=.*|DB_PASSWORD=${{ env.DATABASE_ADMIN_PASSWORD }}|g" \
               .env.template > back-end/.env.staging
 
       - name: Créer le paquet de déploiement
