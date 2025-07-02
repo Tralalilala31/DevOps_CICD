@@ -12,8 +12,7 @@ services:
       DB_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
       PORT: ${PORT_BACK}
     healthcheck:
-      test:
-        ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:${PORT_BACK}/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:3000/health"]
       interval: 10s
       timeout: 5s
       retries: 10
