@@ -15,7 +15,7 @@ services:
       test: ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:3000/health"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 6
       start_period: 5s
     depends_on:
       mysql:
@@ -28,6 +28,12 @@ services:
         API_PORT: ${PORT_BACK}
     ports:
       - ${PORT_FRONT}:4200
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:4200"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
     depends_on:
       backend:
         condition: service_healthy
