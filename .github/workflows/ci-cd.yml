@@ -31,7 +31,7 @@ jobs:
       - name: Builder le frontend via Docker Compose
         run: docker compose build frontend
 
-  build_test_backend:
+  backend_tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -46,7 +46,7 @@ jobs:
           docker compose exec backend npm run test:unit
 
   perf_tests:
-    needs: build_test_backend
+    needs: backend_tests
     runs-on: ubuntu-latest
 
     steps:
@@ -72,7 +72,7 @@ jobs:
           docker compose exec backend npm run test:e2e
 
   deploy_staging:
-    needs: [build_frontend, build_test_backend]
+    needs: [build_frontend, backend_tests]
     runs-on: ubuntu-latest
     environment:
       name: staging
