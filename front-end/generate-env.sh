@@ -3,21 +3,22 @@
 set -euo pipefail
 
 WEATHER_API_KEY=5ccad1686b1549b992d70017250602
-TARGET_FILE=src/environments/environment.$NODE_ENV.ts
+FILE_DIR=src/environments/
+FILE_NAME=environment.$NODE_ENV.ts
+FILE=$FILE_DIR$FILE_NAME
 
-# Choix du nom du fichier à générer
 if [ "$NODE_ENV" = "production" ]; then
   PROD_VALUE=true
 else
   PROD_VALUE=false
 fi
 
-# Génération du fichier TypeScript
-echo "// GENERATED FIILE - DO NOT EDIT
+mkdir -p $FILE_DIR
+echo "// GENERATED FILE WITH DOCKER - DO NOT EDIT
 export const environment = {
   production: $PROD_VALUE,
   apiUrl: '$API_URL',
   weatherApiKey: '$WEATHER_API_KEY'
-};" > $TARGET_FILE
+};" > $FILE
 
-echo "✅ Fichier généré : $TARGET_FILE"
+echo "Fichier d'environnement généré : $FILE"
