@@ -4,7 +4,7 @@ set -euo pipefail
 
 WEATHER_API_KEY=5ccad1686b1549b992d70017250602
 FILE_DIR=src/environments/
-FILE_NAME=environment.$NODE_ENV.ts
+FILE_NAME=environment.ts
 FILE=$FILE_DIR$FILE_NAME
 
 if [ "$NODE_ENV" = "production" ]; then
