@@ -32,23 +32,39 @@ function writeJsonFile(data: Data) {
 export function addItem(item: Item) {
   const data = readJsonFile();
   if (data.items.find(i => i.id === item.id)) {
-    return;
+    return false;
   }
   data.items.push(item);
   writeJsonFile(data);
+  return item;
 }
 
 export function deleteItem(id: number) {
   const data = readJsonFile();
   const updatedItems = data.items.filter(item => item.id !== id);
   if (updatedItems.length === data.items.length) {
-    return;
+    return false;
   }
   data.items = updatedItems;
   writeJsonFile(data);
+  return true;
 }
 
 export function listItems(): Item[] {
   const data = readJsonFile();
   return data.items;
+}
+
+export function updateItem(id: number, updatedFields: Partial<Omit<Item, 'id'>>) {
+  const data = readJsonFile();
+  const index = data.items.findIndex(item => item.id === id);
+
+  if (index === -1) {
+    return false;
+  }
+
+  data.items[index] = { ...data.items[index]!, ...updatedFields };
+
+  writeJsonFile(data);
+  return true;
 }
