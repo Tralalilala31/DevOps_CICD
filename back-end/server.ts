@@ -2,11 +2,12 @@ import express from "express";
 import cors from "cors";
 import { createServer } from "http";
 import userRoutes from "./routes/user";
+import cardRoutes from "./routes/card";
 import { connectDB } from "./config/database";
 
 const app = express();
 const PORT = 3000;
-const { NODE_ENV, FRONTEND_URL } = process.env;
+const { NODE_ENV } = process.env;
 
 // Verification des variables d'environnement
 if (
@@ -17,15 +18,10 @@ if (
 ) {
   throw new Error("La variable d'environnement NODE_ENV n'est pas définie.");
 }
-if (!FRONTEND_URL) {
-  throw new Error(
-    "La variable d'environnement FRONTEND_URL n'est pas définie."
-  );
-}
 
 // Configuration CORS
 const corsOptions = {
-  origin: FRONTEND_URL,
+  origin: "http://localhost",
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -58,6 +54,7 @@ app.get("/health", (req, res) => {
 
 // TODO: Instanciation des routes
 app.use("/api/users", userRoutes);
+app.use("/api/cards", cardRoutes);
 
 // Middleware de gestion des routes non trouvées
 app.use("*", (req, res) => {
