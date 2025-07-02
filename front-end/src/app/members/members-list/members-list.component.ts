@@ -23,7 +23,6 @@ export class MembersListComponent implements OnInit {
 loadMembers(): void {
   this.membersService.getMembers().subscribe({
     next: (res) => {
-      console.log('📦 Données reçues de l\'API :', res);
       this.members = res.data.users; // ✅ C’est ici qu’il faut cibler
     },
     error: (err) => console.error('Erreur chargement membres :', err)

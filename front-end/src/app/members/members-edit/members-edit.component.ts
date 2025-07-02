@@ -32,7 +32,6 @@ ngOnInit(): void {
 
 this.membersService.getMemberById(this.memberId).subscribe({
   next: (member) => {
-    console.log('🔎 Membre reçu pour édition :', member);
     this.memberForm.patchValue(member);
   },
 

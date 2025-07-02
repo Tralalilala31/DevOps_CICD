@@ -8,8 +8,8 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class MembersService {
-
-    private apiUrl = environment.apiUrl;
+  
+  private apiUrl = environment.apiUrl + "/users";
 
   constructor(private http: HttpClient) {}
 

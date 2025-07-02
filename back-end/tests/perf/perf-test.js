@@ -2,7 +2,13 @@ import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import http from 'http';
 
-const URL = process.env.API_URL || "http://localhost:3000/api/users";
+const { PORT } = process.env;
+
+if (!PORT) {
+    throw new Error("La variable d'environnement PORT n'est pas définie.");
+}
+
+const URL = `http://localhost:${PORT}/api/users`;
 
 // Fonction pour mesurer le temps de réponse
 function testPerf(url, method = "GET", body = null) {
