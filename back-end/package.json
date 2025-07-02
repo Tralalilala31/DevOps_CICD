@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only server.ts",
-    "build": "tsc --project tsconfig.prod.json",
-    "start": "node dist/server.js",
     "test": "jest",
     "test:unit": "jest tests",
     "test:integration": "jest tests",
