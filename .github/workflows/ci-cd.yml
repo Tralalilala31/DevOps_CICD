@@ -275,7 +275,7 @@ jobs:
           }
           
           # Vérifier l'API sur le nouveau port
-          if ! retry_curl "http://212.83.130.245:3001/health" "API (port 3001)"; then
+          if ! retry_curl "http://212.83.130.245:3000/health" "API (port 3000)"; then
             echo "🔍 Diagnostic API..."
             sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
               ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} \
@@ -284,7 +284,7 @@ jobs:
           fi
           
           # Vérifier le Frontend sur le nouveau port
-          if ! retry_curl "http://212.83.130.245:8080" "Frontend (port 8080)"; then
+          if ! retry_curl "http://212.83.130.245" "Frontend (port 80)"; then
             echo "🔍 Diagnostic Frontend..."
             sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
               ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} \
@@ -293,9 +293,9 @@ jobs:
           fi
           
           echo "✅ Staging opérationnel sur les nouveaux ports"
-          echo "🌐 API: http://212.83.130.245:3001"
-          echo "🌐 Frontend: http://212.83.130.245:8080"
-          echo "🗄️ PhpMyAdmin: http://212.83.130.245:8081"
+          echo "🌐 API: http://212.83.130.245:3000"
+          echo "🌐 Frontend: http://212.83.130.245"
+          echo "🗄️ PhpMyAdmin: http://212.83.130.245:8080"
 
   deploy_production:
     needs: deploy_staging
