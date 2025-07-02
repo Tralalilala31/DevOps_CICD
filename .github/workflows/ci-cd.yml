@@ -64,7 +64,13 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Start containers for performance tests
-        run: docker compose up -d --build
+        run: |
+          docker compose \
+          -f compose.yml \
+          -f compose.prod.yml \
+          up \
+          -d \
+          --build
 
       - name: Run performance tests
         run: docker compose exec backend node tests/perf/perf-test.js
@@ -118,10 +124,18 @@ jobs:
             cd /home/cicd/staging
 
             echo "🚀 Starting services..."
-            docker compose up -d --build
+            docker compose \
+            -f compose.yml \
+            -f compose.prod.yml \
+            up \
+            -d \
+            --build
 
             echo "📊 Exposed services :"
-            docker compose ps
+            docker compose \
+            -f compose.yml \
+            -f compose.prod.yml \
+            ps
           EOF
 
   deploy_production:
@@ -182,10 +196,18 @@ jobs:
             cd /home/cicd/production
 
             echo "🚀 Starting services..."
-            docker compose up -d --build --wait
+            docker compose \
+            -f compose.yml \
+            -f compose.prod.yml \
+            up \
+            -d \
+            --build
 
-            echo "📊 Exposed services:"
-            docker compose ps
+            echo "📊 Exposed services :"
+            docker compose \
+            -f compose.yml \
+            -f compose.prod.yml \
+            ps
           EOF
 
       - name: Notify deployment success
