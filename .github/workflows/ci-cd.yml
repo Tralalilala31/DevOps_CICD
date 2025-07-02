@@ -379,7 +379,6 @@ jobs:
             if docker ps --format '{{.Names}}' | grep -q "${PROJECT_NAME}_mysql_prod"; then
               docker exec ${PROJECT_NAME}_mysql_prod \
                 mysqldump -u root -p${{ secrets.DATABASE_ROOT_PASSWORD }} ${PROJECT_NAME}_prod > "$BACKUP_DIR/db.sql" || true
-              echo "💾 Dump MySQL sauvegardé."
             fi
           EOF
 
