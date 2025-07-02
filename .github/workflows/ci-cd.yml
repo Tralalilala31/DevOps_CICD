@@ -212,9 +212,7 @@ jobs:
             cp .env.staging .env
             docker compose -f compose.yml -f compose.prod.yml up -d --build
           
-          
             echo "⌛ Attente du démarrage des services..."
-            sleep 20
             docker compose ps
           EOF
 
@@ -325,14 +323,12 @@ jobs:
             docker compose -f compose.yml -f compose.prod.yml up -d --build
           
             echo "⏳ Attente du démarrage..."
-            sleep 30
             docker compose ps
           EOF
 
       - name: Vérifications santé de la prod
         run: |
           echo "🏥 Vérifications de santé production"
-          sleep 30
           
           echo "Test API..."
           curl -f http://212.83.130.245:4001/health || {
