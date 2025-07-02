@@ -21,7 +21,6 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"status":"test","message":"🚀 Webhook de test"}'
 
-
   build_frontend:
     runs-on: ubuntu-latest
 
@@ -64,10 +63,21 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Installer les dépendances E2E
+        working-directory: ./e2e-tests
+        run: npm ci
+
+      - name: Démarrer les services avec Docker
+        run: docker compose up -d --build
+
       - name: Lancer les tests E2E
-        run: |
-          docker compose up -d --build
-          docker compose exec backend npm run test:e2e
+        working-directory: ./e2e-tests
+        run: npm run e2e
 
   deploy_staging:
     needs: [build_frontend, backend_tests]
