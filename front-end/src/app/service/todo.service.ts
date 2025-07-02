@@ -12,7 +12,7 @@ export interface Task {
   providedIn: 'root'
 })
 export class TodoService {
-  private apiUrl = 'http://localhost:3000/api/tasks'; // à adapter si besoin
+  private apiUrl = 'http://localhost:3000/api/cards'; // à adapter si besoin
 
   constructor(private http: HttpClient) {}
 
