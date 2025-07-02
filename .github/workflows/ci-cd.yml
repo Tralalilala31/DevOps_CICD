@@ -102,7 +102,7 @@ jobs:
       - name: Créer le paquet de déploiement
         run: |
           mkdir -p deploy/staging
-          cp -r front-end back-end .env.staging compose.yml deploy/staging/
+          cp -r front-end back-end back-end/.env.staging compose.yml deploy/staging/
           tar -czf staging-deployment.tar.gz -C deploy/staging .
 
       - name: Déployer sur le serveur staging
