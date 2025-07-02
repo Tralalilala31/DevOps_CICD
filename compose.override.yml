@@ -3,6 +3,7 @@ services:
   backend:
     build:
       target: dev
+    working_dir: /app
     volumes:
       - ./back-end:/app
       - /app/node_modules
@@ -12,6 +13,7 @@ services:
   frontend:
     build:
       target: dev
+    working_dir: /app
     volumes:
       - ./front-end:/app
       - /app/node_modules
