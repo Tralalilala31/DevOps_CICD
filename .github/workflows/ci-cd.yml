@@ -97,6 +97,7 @@ jobs:
               -e "s|\${API_URL}|http://212.83.130.245:3000|g" \
               -e "s|\${PORT}|3000|g" \
               -e "s|\${FRONTEND_PORT}|80|g" \
+              -e "s|\${MYSQL_VERSION}|8.0|g" \
               .env.template > back-end/.env.staging
 
       - name: Créer le paquet de déploiement
@@ -113,12 +114,12 @@ jobs:
             set -e
             mkdir -p /home/cicd/staging
             cd /home/cicd
-  
+          
             if ! command -v docker &> /dev/null; then
               echo "❌ Docker n'est pas installé"
               exit 1
             fi
-  
+          
             if ! docker compose version &> /dev/null; then
               echo "🧩 Installation de docker compose v2..."
               mkdir -p ~/.docker/cli-plugins
@@ -126,7 +127,7 @@ jobs:
                 -o ~/.docker/cli-plugins/docker-compose
               chmod +x ~/.docker/cli-plugins/docker-compose
             fi
-  
+          
             rm -rf staging/*
           EOF
 
@@ -144,19 +145,86 @@ jobs:
             tar -xzf staging-deployment.tar.gz -C staging/
             cd staging
           
+            # Arrêter les anciens conteneurs
             docker compose down --volumes || true
+          
+            # Copier et sourcer le fichier d'environnement
             cp .env.staging .env
-            docker compose -f compose.yml -f compose.prod.yml up -d --build
+          
+            # Démarrer les services
+            docker compose up -d --build
           
             echo "⌛ Attente du démarrage des services..."
+          
+            # Attendre que tous les services soient healthy
+            timeout=120
+            elapsed=0
+            while [ $elapsed -lt $timeout ]; do
+              if docker compose ps --filter "status=running" | grep -q "healthy\|Up"; then
+                healthy_count=$(docker compose ps --filter "status=running" | grep -c "healthy\|Up" || echo "0")
+                if [ "$healthy_count" -ge 3 ]; then
+                  echo "✅ Services démarrés avec succès"
+                  break
+                fi
+              fi
+              echo "⏳ Attente des services... ($elapsed/$timeout s)"
+              sleep 5
+              elapsed=$((elapsed + 5))
+            done
+          
+            if [ $elapsed -ge $timeout ]; then
+              echo "❌ Timeout: Les services n'ont pas démarré à temps"
+              docker compose ps
+              docker compose logs
+              exit 1
+            fi
+          
             docker compose ps
           EOF
 
-      - name: Vérification du déploiement
+      - name: Vérification du déploiement avec retry
         run: |
-          echo "🔍 Vérification du staging"
-          curl -f http://212.83.130.245:3000/health || echo "⚠️ API indisponible"
-          curl -f http://212.83.130.245 || echo "⚠️ Frontend indisponible"
+          echo "🔍 Vérification du staging avec retry"
+          
+          # Fonction de retry
+          retry_curl() {
+            local url=$1
+            local service_name=$2
+            local max_attempts=10
+            local wait_time=10
+          
+            for i in $(seq 1 $max_attempts); do
+              echo "Tentative $i/$max_attempts pour $service_name..."
+              if curl -f --connect-timeout 10 --max-time 30 "$url"; then
+                echo "✅ $service_name disponible"
+                return 0
+              fi
+              echo "⏳ $service_name non disponible, attente ${wait_time}s..."
+              sleep $wait_time
+            done
+          
+            echo "❌ $service_name indisponible après $max_attempts tentatives"
+            return 1
+          }
+          
+          # Vérifier l'API
+          if ! retry_curl "http://212.83.130.245:3000/health" "API"; then
+            echo "🔍 Diagnostic API..."
+            sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} \
+              "cd /home/cicd/staging && docker compose logs backend"
+            exit 1
+          fi
+          
+          # Vérifier le Frontend
+          if ! retry_curl "http://212.83.130.245" "Frontend"; then
+            echo "🔍 Diagnostic Frontend..."
+            sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} \
+              "cd /home/cicd/staging && docker compose logs frontend"
+            exit 1
+          fi
+          
           echo "✅ Staging opérationnel"
 
   deploy_production:
@@ -187,6 +255,7 @@ jobs:
               -e "s|API_URL=.*|API_URL=http://212.83.130.245:4001|g" \
               -e "s|PORT=.*|PORT=4001|g" \
               -e "s|FRONTEND_PORT=.*|FRONTEND_PORT=4000|g" \
+              -e "s|\${MYSQL_VERSION}|8.0|g" \
             .env.template > back-end/.env.production
 
       - name: Créer le paquet de déploiement
@@ -213,7 +282,7 @@ jobs:
             # Sauvegarde DB si conteneur existant
             if docker ps --format '{{.Names}}' | grep -q cicd_project_mysql_prod; then
               docker exec cicd_project_mysql_prod \
-                mysqldump -u root -p$DATABASE_ROOT_PASSWORD cicd_project_prod > "$BACKUP_DIR/db.sql" || true
+                mysqladump -u root -p$DATABASE_ROOT_PASSWORD cicd_project_prod > "$BACKUP_DIR/db.sql" || true
               echo "💾 Dump MySQL sauvegardé."
             fi
           EOF
@@ -258,25 +327,62 @@ jobs:
             docker compose -f compose.yml -f compose.prod.yml up -d --build
           
             echo "⏳ Attente du démarrage..."
+          
+            # Attendre que les services soient healthy
+            timeout=120
+            elapsed=0
+            while [ $elapsed -lt $timeout ]; do
+              if docker compose ps --filter "status=running" | grep -q "healthy\|Up"; then
+                healthy_count=$(docker compose ps --filter "status=running" | grep -c "healthy\|Up" || echo "0")
+                if [ "$healthy_count" -ge 3 ]; then
+                  echo "✅ Services démarrés avec succès"
+                  break
+                fi
+              fi
+              echo "⏳ Attente des services... ($elapsed/$timeout s)"
+              sleep 5
+              elapsed=$((elapsed + 5))
+            done
+          
             docker compose ps
           EOF
 
-      - name: Vérifications santé de la prod
+      - name: Vérifications santé de la prod avec retry
         run: |
           echo "🏥 Vérifications de santé production"
           
-          echo "Test API..."
-          curl -f http://212.83.130.245:4001/health || {
-            echo "❌ API non disponible"
-            exit 1
+          # Fonction de retry pour production
+          retry_curl_prod() {
+            local url=$1
+            local service_name=$2
+            local max_attempts=10
+            local wait_time=10
+          
+            for i in $(seq 1 $max_attempts); do
+              echo "Tentative $i/$max_attempts pour $service_name..."
+              if curl -f --connect-timeout 10 --max-time 30 "$url"; then
+                echo "✅ $service_name disponible"
+                return 0
+              fi
+              echo "⏳ $service_name non disponible, attente ${wait_time}s..."
+              sleep $wait_time
+            done
+          
+            echo "❌ $service_name indisponible après $max_attempts tentatives"
+            return 1
           }
           
-          echo "Test Frontend..."
-          curl -f http://212.83.130.245:4000 || {
-            echo "❌ Frontend non disponible"
+          # Test API
+          if ! retry_curl_prod "http://212.83.130.245:4001/health" "API Production"; then
             exit 1
-          }
+          fi
           
+          # Test Frontend
+          if ! retry_curl_prod "http://212.83.130.245:4000" "Frontend Production"; then
+            exit 1
+          fi
+          
+          # Test temps de réponse
           echo "Test temps de réponse..."
           response_time=$(curl -o /dev/null -s -w "%{time_total}" http://212.83.130.245:4001/health)
           echo "⏱ Temps réponse API : ${response_time}s"
