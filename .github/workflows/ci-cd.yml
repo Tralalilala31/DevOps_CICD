@@ -56,32 +56,17 @@ jobs:
         run: docker compose exec backend node tests/perf/perf-test.js
 
   e2e_tests:
-    # if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "20"
+      - name: Start container for E2E tests
+        run: docker compose up --build
 
-      - name: Installer les dépendances E2E
-        working-directory: ./e2e-tests
-        run: npm ci
-
-      - name: Installer les navigateurs Playwright
-        working-directory: ./e2e-tests
-        run: npx playwright install --with-deps
-
-      - name: Démarrer les services avec Docker
-        run: docker compose up -d --build
-
-      - name: Lancer les tests E2E
-        working-directory: ./e2e-tests
-        run: npm run e2e
+      - name: Run performance tests inside backend
+        run: docker compose exec e2e node tests/home.spec.js
 
   deploy_staging:
     needs: [build_frontend, backend_tests]
@@ -116,7 +101,7 @@ jobs:
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
             cd /home/cicd/staging
-            
+          
             echo "🚀 Démarrage des services..."
             docker compose up -d --build
 
@@ -180,7 +165,7 @@ jobs:
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
             cd /home/cicd/staging
-            
+          
             echo "🚀 Démarrage des services..."
             docker compose up -d --build
 
