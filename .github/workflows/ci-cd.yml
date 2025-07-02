@@ -100,6 +100,7 @@ jobs:
         run: |
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
+            set -e
             cd /home/cicd/staging
           
             echo "🚀 Démarrage des services..."
@@ -142,7 +143,6 @@ jobs:
         run: |
           sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'EOF'
-
             set -e
 
             BACKUP_DIR="/home/cicd/backups/$(date +%Y%m%d_%H%M%S)"
@@ -164,6 +164,7 @@ jobs:
         run: |
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
+            set -e
             cd /home/cicd/staging
           
             echo "🚀 Démarrage des services..."
