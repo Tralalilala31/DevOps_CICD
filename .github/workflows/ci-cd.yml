@@ -12,6 +12,16 @@ env:
   PROJECT_NAME: cicd_project
 
 jobs:
+  test_webhook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test webhook
+        run: |
+          curl -v -X POST ${{ secrets.WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d '{"status":"test","message":"🚀 Webhook de test"}'
+
+
   build_frontend:
     runs-on: ubuntu-latest
 
