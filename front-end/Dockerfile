@@ -9,10 +9,10 @@ CMD ["sh", "-c", ". ./generate-env.sh && npm install && npm run dev"]
 
 FROM base AS build
 WORKDIR /app
-ENV NODE_ENV=production
 COPY package*.json ./
 RUN npm ci --no-audit --no-fund && npm cache clean --force # With devdeps for building
 COPY . .
+ENV NODE_ENV=production
 RUN . ./generate-env.sh && npm run build
 
 FROM nginx:alpine AS prod
