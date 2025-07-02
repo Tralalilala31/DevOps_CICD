@@ -7,7 +7,7 @@ config();
 const { NODE_ENV, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT } =
   process.env;
 
-if (!NODE_ENV || !DB_NAME || !DB_USER || !DB_PASSWORD || !DB_HOST || !DB_PORT) {
+if (!DB_NAME || !DB_USER || !DB_PASSWORD || !DB_HOST || !DB_PORT) {
   throw new Error(
     "Les variables d'environnement pour la base de données ne sont pas correctement définies."
   );
@@ -15,8 +15,8 @@ if (!NODE_ENV || !DB_NAME || !DB_USER || !DB_PASSWORD || !DB_HOST || !DB_PORT) {
 
 // Configuration Sequelize
 const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
-  host: DB_HOST!,
-  port: parseInt(DB_PORT!),
+  host: DB_HOST,
+  port: parseInt(DB_PORT),
   dialect: "mysql",
   logging: NODE_ENV === "development" ? console.log : false,
   pool: {

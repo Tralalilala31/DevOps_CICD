@@ -22,8 +22,8 @@ Tout le projet est inclus dans des conteneurs Docker donc les fichiers ne sont p
 
 ```bash
 docker compose \
--f compose.yaml \
--f compose.prod.yaml \
+-f compose.yml \
+-f compose.prod.yml \
 up \
 -d \
 --build
@@ -45,4 +45,4 @@ up \
 --build
 ```
 
-Contrairement à la production, il n'est pas nécessaire de spécifier les fichiers compose, car le fichier `docker-compose.override.yaml` est pris en compte par défaut.
+Contrairement à la production, il n'est pas nécessaire de spécifier les fichiers compose, car le fichier `docker-compose.override.yml` est pris en compte par défaut.
