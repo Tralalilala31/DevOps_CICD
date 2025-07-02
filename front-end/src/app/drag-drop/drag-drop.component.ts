@@ -178,10 +178,7 @@ export class DragDropComponent {
   loadCategoriesFromLocalStorage() {
     try {
       const storedCategories = localStorage.getItem('categories');
-      console.log("Stored Categories (Raw):", storedCategories);
-
       this.categories = storedCategories ? JSON.parse(storedCategories) : [];
-
       if (!Array.isArray(this.categories) || this.categories.length === 0) {
         this.initializeDefaultCategories();
       }

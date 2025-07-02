@@ -27,7 +27,6 @@ export class WeatherService {
 
     // Check if the cache exists and is still valid
     if (this.cache[cacheKey] && this.cache[cacheKey].expiry > now) {
-      console.log('Returning cached data for:', city);
       this.weatherSubject.next(this.cache[cacheKey].data);
       return of(this.cache[cacheKey].data);
     }
