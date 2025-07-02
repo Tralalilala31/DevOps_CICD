@@ -18,18 +18,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Générer `.env` pour le frontend depuis template
-        run: |
-          sed -e "s|\${PROJECT_NAME}|${{ env.PROJECT_NAME }}|g" \
-              -e "s|VITE_API_URL=.*|VITE_API_URL=${{ secrets.FRONTEND_API_URL }}|g" \
-              -e "s|VITE_APP_NAME=.*|VITE_APP_NAME=${{ env.PROJECT_NAME }}|g" \
-              -e "s|VITE_APP_VERSION=.*|VITE_APP_VERSION=${{ github.ref_name }}|g" \
-              -e "s|VITE_ENVIRONMENT=.*|VITE_ENVIRONMENT=ci|g" \
-            front-end/.env > front-end/.env
-  
-          echo "=== .env frontend ==="
-          grep -v PASSWORD front-end/.env
-
       - name: Builder le frontend via Docker Compose
         run: docker compose build frontend
 
@@ -38,35 +26,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      - name: Générer `.env` pour tests backend
-        run: |
-          sed -e "s|\${PROJECT_NAME}|${{ env.PROJECT_NAME }}|g" \
-              -e "s|\${DATABASE_ADMIN_USER}|${{ secrets.DATABASE_ADMIN_USER }}|g" \
-              -e "s|\${DATABASE_ADMIN_PASSWORD}|${{ secrets.DATABASE_ADMIN_PASSWORD }}|g" \
-              -e "s|\${DATABASE_ROOT_PASSWORD}|${{ secrets.DATABASE_ROOT_PASSWORD }}|g" \
-              -e "s|NODE_ENV=.*|NODE_ENV=test|g" \
-            back-end/.env > .env
-  
-          echo "=== .env backend test ==="
-          grep -v PASSWORD .env
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - name: Générer le fichier .env avec sed
-        run: |
-          cd back-end
-          sed -e "s|\${PROJECT_NAME}|${{ env.PROJECT_NAME }}|g" \
-              -e "s|\${DATABASE_ADMIN_USER}|${{ secrets.DATABASE_ADMIN_USER }}|g" \
-              -e "s|\${DATABASE_ADMIN_PASSWORD}|${{ secrets.DATABASE_ADMIN_PASSWORD }}|g" \
-              -e "s|\${DATABASE_ROOT_PASSWORD}|${{ secrets.DATABASE_ROOT_PASSWORD }}|g" \
-            .env.template > .env
-          
-          echo "=== Contenu du fichier .env généré (sans secrets) ==="
-          grep -v PASSWORD .env | grep -v SECRET
 
       - name: Lancer l'environnement en fond
         run: docker compose up -d --build
