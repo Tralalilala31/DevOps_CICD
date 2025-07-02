@@ -65,9 +65,8 @@ jobs:
 
       - name: Lancer les tests E2E
         run: |
-          docker compose -f compose.yml up -d --build
-          npm ci
-          npm run e2e
+          docker compose up -d --build
+          docker compose exec backend npm run test:e2e
 
       - name: Nettoyage
         if: always()
