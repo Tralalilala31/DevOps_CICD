@@ -68,5 +68,17 @@ services:
       mysql:
         condition: service_healthy
 
+  e2e-tests:
+    image: mcr.microsoft.com/playwright:v1.53.2-jammy
+    working_dir: /tests
+    volumes:
+      - ./e2e-tests:/tests
+    depends_on:
+      frontend:
+        condition: service_healthy
+    command: >
+      bash -c "npx playwright install --with-deps &&
+               npx playwright test"
+
 volumes:
   mysql-data:
