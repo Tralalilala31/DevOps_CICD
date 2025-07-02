@@ -1,20 +1,15 @@
 FROM node:20-alpine AS base
+ARG API_URL
+ENV API_URL=$API_URL
 
 FROM base AS dev
 EXPOSE 4200
-
-ARG API_URL
-ENV API_URL=$API_URL
 ENV NODE_ENV=production
 
 CMD ["sh", "-c", ". ./generate-env.sh && npm install && npm run dev"]
 
 FROM base AS build
 WORKDIR /app
-
-ARG API_URL
-
-ENV API_URL=$API_URL
 ENV NODE_ENV=production
 
 COPY package*.json ./
