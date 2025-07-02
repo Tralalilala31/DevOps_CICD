@@ -27,22 +27,22 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Tester les services Docker sans configuration
+      - name: Build and test Docker services
         run: |
-          echo "� Construction et démarrage des services..."
+          echo "🚀 Building and starting services..."
           docker compose build
           docker compose up -d --wait
 
-          echo "✅ Services healthy - Test réussi !"
+          echo "✅ Services healthy - Test successful!"
           docker compose ps
 
-      - name: Nettoyer l'environnement Docker
+      - name: Clean Docker environment
         if: always()
         run: |
-          echo "🧹 Nettoyage en cours..."
+          echo "🧹 Cleaning up..."
           docker compose down -v --remove-orphans
           docker system prune -f
-          echo "✅ Nettoyage terminé"
+          echo "✅ Cleanup completed"
 
   backend_tests:
     runs-on: ubuntu-latest
@@ -50,10 +50,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Lancer l'environnement en fond
+      - name: Start development environment
         run: docker compose up -d --build
 
-      - name: Run unit and integration tests
+      - name: Run backend unit tests
         run: docker compose exec backend npm run test:unit
 
   perf_tests:
@@ -63,10 +63,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Start containers for perf tests
+      - name: Start containers for performance tests
         run: docker compose up -d --build
 
-      - name: Run performance tests inside backend
+      - name: Run performance tests
         run: docker compose exec backend node tests/perf/perf-test.js
 
   e2e_tests:
@@ -76,10 +76,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Start container for E2E tests
+      - name: Start containers for E2E tests
         run: docker compose up --build
 
-      - name: Run performance tests inside backend
+      - name: Run E2E tests
         run: docker compose exec e2e node tests/home.spec.js
 
   deploy_staging:
@@ -92,35 +92,35 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install sshpass
+      - name: Install SSH tools
         run: sudo apt-get update && sudo apt-get install -y sshpass
 
-      - name: Modifier le .env
+      - name: Update environment variables for staging
         run: |
           sed -i "s/^DATABASE_ROOT_PASSWORD=.*/DATABASE_ROOT_PASSWORD=${{ secrets.PROD_DATABASE_ROOT_PASSWORD }}/" .env
           sed -i "s/^DATABASE_ADMIN_PASSWORD=.*/DATABASE_ADMIN_PASSWORD=${{ secrets.PROD_DATABASE_ADMIN_PASSWORD }}/" .env
           sed -i 's/^PORT_FRONT=.*/PORT_FRONT=82/' .env
           sed -i 's/^PORT_BACK=.*/PORT_BACK=3002/' .env
           sed -i 's/^PORT_PHPMYADMIN=.*/PORT_PHPMYADMIN=8082/' .env
-          echo "🔧 Fichier .env modifié pour production"
+          echo "🔧 Environment file updated for staging"
 
-      - name: Envoyer les fichiers avec rsync
+      - name: Deploy files to staging server
         run: |
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' rsync -avz --delete . \
             -e "ssh -o StrictHostKeyChecking=no" \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/staging/
 
-      - name: Déployer les containers
+      - name: Start staging containers
         run: |
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
             set -e
             cd /home/cicd/staging
 
-            echo "🚀 Démarrage des services..."
+            echo "🚀 Starting services..."
             docker compose up -d --build
 
-            echo "📊 Services exposés :"
+            echo "📊 Exposed services :"
             docker compose ps
           EOF
 
@@ -135,25 +135,25 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install sshpass
+      - name: Install SSH tools
         run: sudo apt-get update && sudo apt-get install -y sshpass
 
-      - name: Modifier le .env
+      - name: Update environment variables for production
         run: |
           sed -i "s/^DATABASE_ROOT_PASSWORD=.*/DATABASE_ROOT_PASSWORD=${{ secrets.PROD_DATABASE_ROOT_PASSWORD }}/" .env
           sed -i "s/^DATABASE_ADMIN_PASSWORD=.*/DATABASE_ADMIN_PASSWORD=${{ secrets.PROD_DATABASE_ADMIN_PASSWORD }}/" .env
           sed -i 's/^PORT_FRONT=.*/PORT_FRONT=80/' .env
           sed -i 's/^PORT_BACK=.*/PORT_BACK=3000/' .env
           sed -i 's/^PORT_PHPMYADMIN=.*/PORT_PHPMYADMIN=8080/' .env
-          echo "🔧 Fichier .env modifié pour production"
+          echo "🔧 Environment file updated for production"
 
-      - name: Envoyer les fichiers avec rsync
+      - name: Deploy files to production server
         run: |
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' rsync -avz --delete . \
             -e "ssh -o StrictHostKeyChecking=no" \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/staging/
 
-      - name: Backup de la production existante
+      - name: Backup existing production
         run: |
           sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'EOF'
@@ -164,33 +164,33 @@ jobs:
 
             if [ -d "/home/cicd/production" ]; then
               cp -r /home/cicd/production "$BACKUP_DIR/"
-              echo "✅ Dossier copié : $BACKUP_DIR"
+              echo "✅ Folder copied: $BACKUP_DIR"
             fi
 
-            # Sauvegarde DB si conteneur existant
+            # Database backup if container exists
             if docker ps --format '{{.Names}}' | grep -q "${PROJECT_NAME}_mysql_prod"; then
               docker exec ${PROJECT_NAME}_mysql_prod \
                 mysqldump -u root -p${{ secrets.DATABASE_ROOT_PASSWORD }} ${PROJECT_NAME}_prod > "$BACKUP_DIR/db.sql" || true
             fi
           EOF
 
-      - name: Déployer les containers
+      - name: Start production containers
         run: |
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
             set -e
-            cd /home/cicd/staging
+            cd /home/cicd/production
 
-            echo "🚀 Démarrage des services..."
+            echo "🚀 Starting services..."
             docker compose up -d --build --wait
 
-            echo "📊 Services exposés :"
+            echo "📊 Exposed services:"
             docker compose ps
           EOF
 
-      - name: Notifier le succès du déploiement
+      - name: Notify deployment success
         run: |
-          echo "🎉 Production déployée avec succès !"
+          echo "🎉 Production deployed successfully!"
           echo "Version: ${{ github.ref_name }}"
           echo "URL: http://212.83.130.245:4000"
 
