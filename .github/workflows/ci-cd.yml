@@ -155,9 +155,8 @@ jobs:
       - name: Vérification du déploiement
         run: |
           echo "🔍 Vérification du staging"
-          sleep 30
-          curl -f http://212.83.130.245:3001/health || echo "⚠️ API indisponible"
-          curl -f http://212.83.130.245:3000 || echo "⚠️ Frontend indisponible"
+          curl -f http://212.83.130.245:3000/health || echo "⚠️ API indisponible"
+          curl -f http://212.83.130.245 || echo "⚠️ Frontend indisponible"
           echo "✅ Staging opérationnel"
 
   deploy_production:
@@ -176,7 +175,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y sshpass
 
-      - name: Générer `.env.production` depuis `.env.template`
+      - name: Générer `.env.production`
         run: |
           sed -e "s|\${PROJECT_NAME}|${{ env.PROJECT_NAME }}|g" \
               -e "s|\${DATABASE_ADMIN_USER}|${{ secrets.DATABASE_ADMIN_USER }}|g" \
@@ -188,12 +187,12 @@ jobs:
               -e "s|API_URL=.*|API_URL=http://212.83.130.245:4001|g" \
               -e "s|PORT=.*|PORT=4001|g" \
               -e "s|FRONTEND_PORT=.*|FRONTEND_PORT=4000|g" \
-            back-end/.env.template > .env.production
+            .env.template > back-end/.env.production
 
       - name: Créer le paquet de déploiement
         run: |
           mkdir -p deploy/production
-          cp -r front-end back-end compose.yml .env.production deploy/production/
+          cp -r front-end back-end back-end/.env.production compose.yml deploy/production/
           tar -czf production-deployment.tar.gz -C deploy/production .
 
       - name: Backup de la production existante
