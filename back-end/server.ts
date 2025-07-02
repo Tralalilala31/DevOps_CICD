@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { createServer } from "http";
 import userRoutes from "./routes/user";
+import cardRoutes from "./routes/card";
 import { connectDB } from "./config/database";
 
 const app = express();
@@ -53,6 +54,7 @@ app.get("/health", (req, res) => {
 
 // TODO: Instanciation des routes
 app.use("/api/users", userRoutes);
+app.use("/api/cards", cardRoutes);
 
 // Middleware de gestion des routes non trouvées
 app.use("*", (req, res) => {
