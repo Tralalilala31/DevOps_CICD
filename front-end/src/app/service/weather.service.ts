@@ -9,8 +9,8 @@ import { environment } from '../../environments/environment';
   providedIn: 'root'
 })
 export class WeatherService {
-  private apiUrl = 'https://api.weatherapi.com/v1/current.json';
-  private apiKey: string = environment.weatherApiKey;
+  private WEATHER_API_URL = 'https://api.weatherapi.com/v1/current.json';
+  private WEATHER_API_KEY: string = environment.weatherApiKey;
 
   private cache: { [key: string]: { expiry: number, data: WeatherData } } = {};
 
@@ -27,12 +27,11 @@ export class WeatherService {
 
     // Check if the cache exists and is still valid
     if (this.cache[cacheKey] && this.cache[cacheKey].expiry > now) {
-      console.log('Returning cached data for:', city);
       this.weatherSubject.next(this.cache[cacheKey].data);
       return of(this.cache[cacheKey].data);
     }
 
-    const url = `${this.apiUrl}?key=${this.apiKey}&q=${city}&aqi=no`;
+    const url = `${this.WEATHER_API_URL}?key=${this.WEATHER_API_KEY}&q=${city}&aqi=no`;
 
     return this.http.get<WeatherData>(url).pipe(
       tap(data => {

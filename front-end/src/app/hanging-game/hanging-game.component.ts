@@ -32,8 +32,6 @@ export class HangingGameComponent {
       console.error('Error fetching word, using fallback:', error);
       this.selectedWord = fallbackWords[Math.floor(Math.random() * fallbackWords.length)]; // Random fallback word
     }
-
-    console.log('Selected Word:', this.selectedWord);
     this.newGame();
   }
 
