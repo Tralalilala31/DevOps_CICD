@@ -45,18 +45,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Générer le fichier .env (performance)
-        run: |
-          sed -e "s|\${PROJECT_NAME}|${{ env.PROJECT_NAME }}|g" \
-              -e "s|\${DATABASE_ADMIN_USER}|${{ secrets.DATABASE_ADMIN_USER }}|g" \
-              -e "s|\${DATABASE_ADMIN_PASSWORD}|${{ secrets.DATABASE_ADMIN_PASSWORD }}|g" \
-              -e "s|\${DATABASE_ROOT_PASSWORD}|${{ secrets.DATABASE_ROOT_PASSWORD }}|g" \
-              -e "s|NODE_ENV=.*|NODE_ENV=performance|g" \
-            back-end/.env.template > .env
-
-          echo "=== Contenu du fichier .env généré (sans secrets) ==="
-          grep -v PASSWORD .env | grep -v SECRET
-
       - name: Start containers for perf tests
         run: docker compose up -d --build
 
@@ -74,18 +62,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      - name: Générer .env
-        run: |
-          sed -e "s|\${PROJECT_NAME}|${{ env.PROJECT_NAME }}|g" \
-              -e "s|\${DATABASE_ADMIN_USER}|${{ secrets.DATABASE_ADMIN_USER }}|g" \
-              -e "s|\${DATABASE_ADMIN_PASSWORD}|${{ secrets.DATABASE_ADMIN_PASSWORD }}|g" \
-              -e "s|\${DATABASE_ROOT_PASSWORD}|${{ secrets.DATABASE_ROOT_PASSWORD }}|g" \
-              -e "s|NODE_ENV=.*|NODE_ENV=e2e|g" \
-            back-end/.env.template > .env
-  
-          echo "=== .env généré (sans secrets) ==="
-          grep -v PASSWORD .env | grep -v SECRET
 
       - name: Lancer les E2E via Docker
         run: docker compose -f compose.yml up --build --abort-on-container-exit e2e
