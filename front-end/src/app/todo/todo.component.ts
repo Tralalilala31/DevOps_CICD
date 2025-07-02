@@ -1,8 +1,9 @@
-import { WeatherService } from './../service/weather.service';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { TodoService, Task } from '../service/todo.service';
+import { WeatherService } from './../service/weather.service';
 
 @Component({
   selector: 'app-todo',
@@ -12,87 +13,93 @@ import { Router } from '@angular/router';
   styleUrls: ['./todo.component.css']
 })
 export class TodoComponent implements OnInit {
-  tasks: { text: string; completed: boolean; editing: boolean }[] = [];
+  tasks: (Task & { editing: boolean })[] = [];
   newTask: string = '';
-  constructor(private router: Router) {}
-  ngOnInit() {
-    // Load tasks from local storage
-    const savedTasks = localStorage.getItem('tasks');
-    if (savedTasks) {
-      this.tasks = JSON.parse(savedTasks);
-    }
 
-    // Request notification permission from the user
+  constructor(
+    private router: Router,
+    private todoService: TodoService
+  ) {}
+
+  ngOnInit() {
+    this.loadTasks();
+
     if ("Notification" in window) {
       Notification.requestPermission();
     }
 
-    // Run background task every minute
     setInterval(() => {
       this.showTaskNotification();
-    }, 3600000); // Every 60 mins
+    }, 3600000); // toutes les 60 minutes
   }
 
-
-  private showTaskNotification() {
-
-    const userName = localStorage.getItem('userName') || 'User';
-    const appName = localStorage.getItem('appName') || 'Todo App';
-
-    if (Notification.permission === "granted") {
-      let notificationMessage = '';
-
-      if (this.remainingTasks > 0) {
-        // User has pending tasks
-        notificationMessage = `Hey ${userName}, you have ${this.remainingTasks} tasks to complete! ✅`;
-      } else {
-        notificationMessage = `Hey ${userName}, you have no tasks! Add new tasks in "${appName}" to stay productive. 🚀`;
+  private loadTasks() {
+    this.todoService.getTasks().subscribe({
+      next: (data) => {
+        this.tasks = data.map(t => ({ ...t, editing: false }));
+      },
+      error: (err) => {
+        console.error('Erreur chargement tâches :', err);
       }
-
-      const notification = new Notification("🚀 Reminder!", {
-        body: notificationMessage,
-        icon: "/favicon.png"
-      });
-
-      notification.onclick = () => {
-        window.focus();
-        this.router.navigate(['/todos']); // Navigate to the task page
-      };
-    }else{
-      if ("Notification" in window) {
-        Notification.requestPermission();
-      }
-    }
+    });
   }
-
 
   addTask() {
     if (this.newTask.trim()) {
-      this.tasks.unshift({ text: this.newTask, completed: false, editing: false });
-      this.newTask = '';
-      this.saveToLocalStorage(); // Save tasks to local storage
+      this.todoService.addTask({ text: this.newTask }).subscribe({
+        next: (newTask) => {
+          this.tasks.unshift({ ...newTask, editing: false });
+          this.newTask = '';
+        },
+        error: (err) => {
+          console.error('Erreur ajout tâche :', err);
+        }
+      });
     }
   }
 
   toggleTaskCompletion(index: number) {
-    this.tasks[index].completed = !this.tasks[index].completed;
-    this.saveToLocalStorage(); // Save tasks to local storage
+    const task = this.tasks[index];
+    const updated = { completed: !task.completed };
+
+    this.todoService.updateTask(task.id, updated).subscribe({
+      next: (updatedTask) => {
+        this.tasks[index].completed = updatedTask.completed;
+      },
+      error: (err) => {
+        console.error('Erreur mise à jour :', err);
+      }
+    });
   }
 
   toggleEditTask(index: number) {
-    if (this.tasks[index].editing) {
-      // Save task
-      this.tasks[index].editing = false;
-      this.saveToLocalStorage(); // Save tasks to local storage
+    const task = this.tasks[index];
+
+    if (task.editing) {
+      this.todoService.updateTask(task.id, { text: task.text }).subscribe({
+        next: () => {
+          task.editing = false;
+        },
+        error: (err) => {
+          console.error('Erreur enregistrement édition :', err);
+        }
+      });
     } else {
-      // Enable edit mode
-      this.tasks[index].editing = true;
+      task.editing = true;
     }
   }
 
   deleteTask(index: number) {
-    this.tasks.splice(index, 1);
-    this.saveToLocalStorage(); // Save tasks to local storage
+    const task = this.tasks[index];
+
+    this.todoService.deleteTask(task.id).subscribe({
+      next: () => {
+        this.tasks.splice(index, 1);
+      },
+      error: (err) => {
+        console.error('Erreur suppression :', err);
+      }
+    });
   }
 
   get remainingTasks() {
@@ -103,7 +110,26 @@ export class TodoComponent implements OnInit {
     return this.tasks.filter(task => task.completed).length;
   }
 
-  private saveToLocalStorage() {
-    localStorage.setItem('tasks', JSON.stringify(this.tasks));
+  private showTaskNotification() {
+    const userName = localStorage.getItem('userName') || 'User';
+    const appName = localStorage.getItem('appName') || 'Todo App';
+
+    if (Notification.permission === "granted") {
+      let message = this.remainingTasks > 0
+        ? `Hey ${userName}, you have ${this.remainingTasks} tasks to complete! ✅`
+        : `Hey ${userName}, you have no tasks! Add new tasks in "${appName}" to stay productive. 🚀`;
+
+      const notification = new Notification("🚀 Reminder!", {
+        body: message,
+        icon: "/favicon.png"
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        this.router.navigate(['/todos']);
+      };
+    } else {
+      Notification.requestPermission();
+    }
   }
 }
