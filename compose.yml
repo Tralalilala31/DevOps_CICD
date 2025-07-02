@@ -12,9 +12,9 @@ services:
       DB_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:3000/health"]
-      interval: 3s
+      interval: 5s
       timeout: 5s
-      retries: 3
+      retries: 6
       start_period: 5s
     depends_on:
       mysql:
