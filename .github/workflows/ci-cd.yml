@@ -118,19 +118,19 @@ jobs:
             docker stop $(docker ps -q) 2>/dev/null || true
           
             # Libérer explicitement les ports utilisés par le staging
-            sudo fuser -k 3001/tcp 2>/dev/null || true
+            sudo fuser -k 300/tcp 2>/dev/null || true
+            sudo fuser -k 80/tcp 2>/dev/null || true
             sudo fuser -k 8080/tcp 2>/dev/null || true
-            sudo fuser -k 8081/tcp 2>/dev/null || true
           
             # Vérifier que les ports sont libres
-            if ss -tuln | grep -q ":3001 "; then
-              echo "⚠️ Port 3001 encore utilisé"
-              ss -tuln | grep ":3001 "
+            if ss -tuln | grep -q ":3000 "; then
+              echo "⚠️ Port 3000 encore utilisé"
+              ss -tuln | grep ":3000 "
             fi
           
-            if ss -tuln | grep -q ":8080 "; then
-              echo "⚠️ Port 8080 encore utilisé"
-              ss -tuln | grep ":8080 "
+            if ss -tuln | grep -q ":80 "; then
+              echo "⚠️ Port 80 encore utilisé"
+              ss -tuln | grep ":80 "
             fi
           
             echo "✅ Nettoyage terminé"
