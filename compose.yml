@@ -25,7 +25,7 @@ services:
     build: 
       context: ./front-end
       args:
-        API_URL: ${API_URL}
+        API_PORT: ${PORT_BACK}
     ports:
       - ${PORT_FRONT}:4200
     depends_on:
