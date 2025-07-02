@@ -11,6 +11,12 @@ services:
       DB_USER: admin
       DB_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
       FRONTEND_URL: "http://frontend:4200"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:3000/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
     depends_on:
       mysql:
         condition: service_healthy
@@ -18,9 +24,10 @@ services:
   frontend:
     build: ./front-end
     ports:
-      - "80:4200"
+      - 80:4200
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
   mysql:
     image: mysql:${MYSQL_VERSION}
