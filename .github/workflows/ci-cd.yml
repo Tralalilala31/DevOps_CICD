@@ -159,7 +159,6 @@ jobs:
             fi
           
             rm -rf staging/*
-          EOF
 
       - name: Transférer les fichiers
         run: |
@@ -248,6 +247,13 @@ jobs:
             echo "📊 État final des conteneurs:"
             docker compose ps
           EOF
+
+      - name: 🔍 Logs backend (si échec)
+        if: failure()
+        run: |
+          sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
+            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} \
+            "cd /home/cicd/staging && docker compose logs backend --tail=100"
 
       - name: Vérification du déploiement avec les nouveaux ports
         run: |
