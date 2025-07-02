@@ -1,10 +1,10 @@
 on:
   push:
-    branches: ['**']
+    branches: ["**"]
   pull_request:
-    branches: ['**']
+    branches: ["**"]
   schedule:
-    - cron: '0 22 * * *'
+    - cron: "0 22 * * *"
 
 name: CI/CD Pipeline
 
@@ -125,28 +125,28 @@ jobs:
         run: |
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
-          
+
             echo "🧹 Nettoyage des ports potentiellement en conflit..."
-          
+
             # Arrêter tous les conteneurs Docker qui pourraient utiliser les ports
             docker stop $(docker ps -q) 2>/dev/null || true
-          
+
             # Libérer explicitement les ports utilisés par le staging
             sudo fuser -k 300/tcp 2>/dev/null || true
             sudo fuser -k 80/tcp 2>/dev/null || true
             sudo fuser -k 8080/tcp 2>/dev/null || true
-          
+
             # Vérifier que les ports sont libres
             if ss -tuln | grep -q ":3000 "; then
               echo "⚠️ Port 3000 encore utilisé"
               ss -tuln | grep ":3000 "
             fi
-          
+
             if ss -tuln | grep -q ":80 "; then
               echo "⚠️ Port 80 encore utilisé"
               ss -tuln | grep ":80 "
             fi
-          
+
             echo "✅ Nettoyage terminé"
           EOF
 
@@ -154,16 +154,16 @@ jobs:
         run: |
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
-          
+
             set -e
             mkdir -p /home/cicd/staging
             cd /home/cicd
-          
+
             if ! command -v docker &> /dev/null; then
               echo "❌ Docker n'est pas installé"
               exit 1
             fi
-          
+
             if ! docker compose version &> /dev/null; then
               echo "🧩 Installation de docker compose v2..."
               mkdir -p ~/.docker/cli-plugins
@@ -171,7 +171,7 @@ jobs:
                 -o ~/.docker/cli-plugins/docker-compose
               chmod +x ~/.docker/cli-plugins/docker-compose
             fi
-          
+
             rm -rf staging/*
 
       - name: Transférer les fichiers
@@ -187,15 +187,15 @@ jobs:
             cd /home/cicd
             tar -xzf staging-deployment.tar.gz -C staging/
             cd staging
-          
+
             # Arrêter complètement tous les conteneurs existants
             echo "🛑 Arrêt forcé de tous les conteneurs Docker..."
             docker compose down --volumes --remove-orphans 2>/dev/null || true
             docker system prune -f --volumes 2>/dev/null || true
-          
+
             # Attendre un peu pour que les ports se libèrent
             sleep 5
-          
+
             # Vérifier une dernière fois les ports
             echo "🔍 Vérification finale des ports..."
             for port in 3001 8080 8081; do
@@ -205,15 +205,15 @@ jobs:
                 sleep 2
               fi
             done
-          
+
             # Copier et sourcer le fichier d'environnement
             cp .env.staging .env
-          
+
             echo "🚀 Démarrage des services avec les nouveaux ports..."
             # Démarrer les services avec retry en cas d'échec
             max_retries=3
             retry_count=0
-          
+
             while [ $retry_count -lt $max_retries ]; do
               if docker compose up -d --build; then
                 echo "✅ Services démarrés avec succès"
@@ -225,14 +225,14 @@ jobs:
                 sleep 10
               fi
             done
-          
+
             if [ $retry_count -eq $max_retries ]; then
               echo "❌ Échec du démarrage après $max_retries tentatives"
               exit 1
             fi
-          
+
             echo "⌛ Attente du démarrage des services..."
-          
+
             # Attendre que tous les services soient healthy
             timeout=180
             elapsed=0
@@ -250,14 +250,14 @@ jobs:
               sleep 10
               elapsed=$((elapsed + 10))
             done
-          
+
             if [ $elapsed -ge $timeout ]; then
               echo "❌ Timeout: Les services n'ont pas démarré à temps"
               docker compose ps
               docker compose logs --tail=50
               exit 1
             fi
-          
+
             echo "📊 État final des conteneurs:"
             docker compose ps
           EOF
@@ -265,14 +265,14 @@ jobs:
       - name: Vérification du déploiement avec les nouveaux ports
         run: |
           echo "🔍 Vérification du staging avec les nouveaux ports"
-          
+
           # Fonction de retry
           retry_curl() {
             local url=$1
             local service_name=$2
             local max_attempts=12
             local wait_time=10
-          
+
             for i in $(seq 1 $max_attempts); do
               echo "Tentative $i/$max_attempts pour $service_name..."
               if curl -f --connect-timeout 10 --max-time 30 "$url"; then
@@ -282,11 +282,11 @@ jobs:
               echo "⏳ $service_name non disponible, attente ${wait_time}s..."
               sleep $wait_time
             done
-          
+
             echo "❌ $service_name indisponible après $max_attempts tentatives"
             return 1
           }
-          
+
           # Vérifier l'API sur le nouveau port
           if ! retry_curl "http://212.83.130.245:3000/health" "API (port 3000)"; then
             echo "🔍 Diagnostic API..."
@@ -295,7 +295,7 @@ jobs:
               "cd /home/cicd/staging && docker compose logs backend --tail=50"
             exit 1
           fi
-          
+
           # Vérifier le Frontend sur le nouveau port
           if ! retry_curl "http://212.83.130.245" "Frontend (port 80)"; then
             echo "🔍 Diagnostic Frontend..."
@@ -304,7 +304,7 @@ jobs:
               "cd /home/cicd/staging && docker compose logs frontend --tail=50"
             exit 1
           fi
-          
+
           echo "✅ Staging opérationnel sur les nouveaux ports"
           echo "🌐 API: http://212.83.130.245:3000"
           echo "🌐 Frontend: http://212.83.130.245"
@@ -364,17 +364,17 @@ jobs:
         run: |
           sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'EOF'
-          
+
             set -e
-          
+
             BACKUP_DIR="/home/cicd/backups/$(date +%Y%m%d_%H%M%S)"
             mkdir -p "$BACKUP_DIR"
-          
+
             if [ -d "/home/cicd/production" ]; then
               cp -r /home/cicd/production "$BACKUP_DIR/"
               echo "✅ Dossier copié : $BACKUP_DIR"
             fi
-          
+
             # Sauvegarde DB si conteneur existant
             if docker ps --format '{{.Names}}' | grep -q "${PROJECT_NAME}_mysql_prod"; then
               docker exec ${PROJECT_NAME}_mysql_prod \
@@ -387,33 +387,33 @@ jobs:
         run: |
           sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'EOF'
-          
+
             echo "🧹 Nettoyage des ports potentiellement en conflit (production)..."
-          
+
             # Arrêter tous les conteneurs Docker qui pourraient utiliser les ports
             docker stop $(docker ps -q) 2>/dev/null || true
-          
+
             # Libérer explicitement les ports utilisés par la production
             sudo fuser -k 4000/tcp 2>/dev/null || true
             sudo fuser -k 4001/tcp 2>/dev/null || true
             sudo fuser -k 4002/tcp 2>/dev/null || true
-          
+
             # Vérifier que les ports sont libres
             if ss -tuln | grep -q ":4000 "; then
               echo "⚠️ Port 4000 encore utilisé"
               ss -tuln | grep ":4000 "
             fi
-          
+
             if ss -tuln | grep -q ":4001 "; then
               echo "⚠️ Port 4001 encore utilisé"
               ss -tuln | grep ":4001 "
             fi
-          
+
             if ss -tuln | grep -q ":4002 "; then
               echo "⚠️ Port 4002 encore utilisé"
               ss -tuln | grep ":4002 "
             fi
-          
+
             echo "✅ Nettoyage terminé"
           EOF
 
@@ -421,16 +421,16 @@ jobs:
         run: |
           sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'EOF'
-          
+
             set -e
             mkdir -p /home/cicd/production
             cd /home/cicd
-          
+
             if ! command -v docker &> /dev/null; then
               echo "❌ Docker n'est pas installé"
               exit 1
             fi
-          
+
             if ! docker compose version &> /dev/null; then
               echo "🧩 Installation de docker compose v2..."
               mkdir -p ~/.docker/cli-plugins
@@ -438,7 +438,7 @@ jobs:
                 -o ~/.docker/cli-plugins/docker-compose
               chmod +x ~/.docker/cli-plugins/docker-compose
             fi
-          
+
             rm -rf production/*
           EOF
 
@@ -455,15 +455,15 @@ jobs:
             cd /home/cicd
             tar -xzf production-deployment.tar.gz -C production/
             cd production
-          
+
             # Arrêter complètement tous les conteneurs existants
             echo "🛑 Arrêt forcé de tous les conteneurs Docker..."
             docker compose down --volumes --remove-orphans 2>/dev/null || true
             docker system prune -f --volumes 2>/dev/null || true
-          
+
             # Attendre un peu pour que les ports se libèrent
             sleep 5
-          
+
             # Vérifier une dernière fois les ports
             echo "🔍 Vérification finale des ports..."
             for port in 4000 4001 4002; do
@@ -473,15 +473,15 @@ jobs:
                 sleep 2
               fi
             done
-          
+
             # Copier et sourcer le fichier d'environnement
             cp .env.production .env
-          
+
             echo "🚀 Démarrage des services avec les nouveaux ports..."
             # Démarrer les services avec retry en cas d'échec
             max_retries=3
             retry_count=0
-          
+
             while [ $retry_count -lt $max_retries ]; do
               if docker compose up -d --build; then
                 echo "✅ Services démarrés avec succès"
@@ -493,14 +493,14 @@ jobs:
                 sleep 10
               fi
             done
-          
+
             if [ $retry_count -eq $max_retries ]; then
               echo "❌ Échec du démarrage après $max_retries tentatives"
               exit 1
             fi
-          
+
             echo "⌛ Attente du démarrage des services..."
-          
+
             # Attendre que tous les services soient healthy
             timeout=180
             elapsed=0
@@ -518,14 +518,14 @@ jobs:
               sleep 10
               elapsed=$((elapsed + 10))
             done
-          
+
             if [ $elapsed -ge $timeout ]; then
               echo "❌ Timeout: Les services n'ont pas démarré à temps"
               docker compose ps
               docker compose logs --tail=50
               exit 1
             fi
-          
+
             echo "📊 État final des conteneurs:"
             docker compose ps
           EOF
@@ -533,14 +533,14 @@ jobs:
       - name: Vérification du déploiement production
         run: |
           echo "🔍 Vérification de la production"
-          
+
           # Fonction de retry
           retry_curl() {
             local url=$1
             local service_name=$2
             local max_attempts=12
             local wait_time=10
-          
+
             for i in $(seq 1 $max_attempts); do
               echo "Tentative $i/$max_attempts pour $service_name..."
               if curl -f --connect-timeout 10 --max-time 30 "$url"; then
@@ -550,11 +550,11 @@ jobs:
               echo "⏳ $service_name non disponible, attente ${wait_time}s..."
               sleep $wait_time
             done
-          
+
             echo "❌ $service_name indisponible après $max_attempts tentatives"
             return 1
           }
-          
+
           # Vérifier l'API de production
           if ! retry_curl "http://212.83.130.245:4001/health" "API Production (port 4001)"; then
             echo "🔍 Diagnostic API Production..."
@@ -563,7 +563,7 @@ jobs:
               "cd /home/cicd/production && docker compose logs backend --tail=50"
             exit 1
           fi
-          
+
           # Vérifier le Frontend de production
           if ! retry_curl "http://212.83.130.245:4000" "Frontend Production (port 4000)"; then
             echo "🔍 Diagnostic Frontend Production..."
@@ -572,12 +572,12 @@ jobs:
               "cd /home/cicd/production && docker compose logs frontend --tail=50"
             exit 1
           fi
-          
+
           # Test temps de réponse
           echo "⏱️ Test temps de réponse..."
           response_time=$(curl -o /dev/null -s -w "%{time_total}" http://212.83.130.245:4001/health)
           echo "Temps réponse API : ${response_time}s"
-          
+
           echo "✅ Production opérationnelle !"
           echo "🌐 API: http://212.83.130.245:4001"
           echo "🌐 Frontend: http://212.83.130.245:4000"
@@ -591,7 +591,7 @@ jobs:
 
   notify_webhook_success:
     if: success()
-    needs: [ deploy_staging, deploy_production ]
+    needs: [deploy_staging, deploy_production]
     runs-on: ubuntu-latest
     steps:
       - name: Notify success
