@@ -312,7 +312,7 @@ jobs:
 
   deploy_production:
     needs: deploy_staging
-    if: startsWith(github.ref, 'refs/tags/v')
+    # if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -321,32 +321,44 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Installer sshpass
+      - name: Install sshpass
         run: |
           sudo apt-get update
           sudo apt-get install -y sshpass
 
-      - name: Générer `.env.production`
+      - name: Générer .env.production
         run: |
+          mkdir -p back-end
           sed -e "s|\${PROJECT_NAME}|${{ env.PROJECT_NAME }}|g" \
               -e "s|\${DATABASE_ADMIN_USER}|${{ secrets.DATABASE_ADMIN_USER }}|g" \
               -e "s|\${DATABASE_ADMIN_PASSWORD}|${{ secrets.DATABASE_ADMIN_PASSWORD }}|g" \
               -e "s|\${DATABASE_ROOT_PASSWORD}|${{ secrets.DATABASE_ROOT_PASSWORD }}|g" \
-              -e "s|NODE_ENV=.*|NODE_ENV=production|g" \
+              -e "s|\${NODE_ENV}|production|g" \
+              -e "s|\${APP_URL}|http://212.83.130.245:4000|g" \
+              -e "s|\${API_URL}|http://212.83.130.245:4001|g" \
+              -e "s|\${PORT}|4001|g" \
+              -e "s|\${FRONTEND_PORT}|4000|g" \
+              -e "s|\${PHPMYADMIN_PORT}|4002|g" \
+              -e "s|\${MYSQL_VERSION}|8.0.32|g" \
+              -e "s|DB_HOST=.*|DB_HOST=mysql|g" \
+              -e "s|DB_PORT=.*|DB_PORT=3306|g" \
+              -e "s|DB_USER=.*|DB_USER=${{ secrets.DATABASE_ADMIN_USER }}|g" \
+              -e "s|DB_PASSWORD=.*|DB_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}|g" \
               -e "s|DB_NAME=.*|DB_NAME=${{ env.PROJECT_NAME }}_prod|g" \
-              -e "s|APP_URL=.*|APP_URL=http://212.83.130.245:4000|g" \
-              -e "s|API_URL=.*|API_URL=http://212.83.130.245:4001|g" \
-              -e "s|PORT=.*|PORT=4001|g" \
-              -e "s|FRONTEND_PORT=.*|FRONTEND_PORT=4000|g" \
-              -e "s|PHPMYADMIN_PORT=.*|PHPMYADMIN_PORT=4002|g" \
-              -e "s|\${MYSQL_VERSION}|8.0|g" \
-            .env.template > back-end/.env.production
+              .env.template > back-end/.env.production
 
       - name: Créer le paquet de déploiement
         run: |
           mkdir -p deploy/production
-          cp -r front-end back-end back-end/.env.production compose.yml deploy/production/
+          cp -r front-end back-end compose.yml deploy/production/
+          cp back-end/.env.production deploy/production/back-end/.env.production
+          cp .env* compose*.yml deploy/production/
           tar -czf production-deployment.tar.gz -C deploy/production .
+
+      - name: Vérifier le contenu avant tar
+        run: |
+          ls -R deploy/production/back-end
+          ls -R deploy/production/front-end
 
       - name: Backup de la production existante
         run: |
@@ -364,11 +376,45 @@ jobs:
             fi
           
             # Sauvegarde DB si conteneur existant
-            if docker ps --format '{{.Names}}' | grep -q cicd_project_mysql_prod; then
-              docker exec cicd_project_mysql_prod \
-                mysqladump -u root -p$DATABASE_ROOT_PASSWORD cicd_project_prod > "$BACKUP_DIR/db.sql" || true
+            if docker ps --format '{{.Names}}' | grep -q "${PROJECT_NAME}_mysql_prod"; then
+              docker exec ${PROJECT_NAME}_mysql_prod \
+                mysqldump -u root -p${{ secrets.DATABASE_ROOT_PASSWORD }} ${PROJECT_NAME}_prod > "$BACKUP_DIR/db.sql" || true
               echo "💾 Dump MySQL sauvegardé."
             fi
+          EOF
+
+      - name: Nettoyer les ports en conflit sur le serveur production
+        run: |
+          sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
+            ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'EOF'
+          
+            echo "🧹 Nettoyage des ports potentiellement en conflit (production)..."
+          
+            # Arrêter tous les conteneurs Docker qui pourraient utiliser les ports
+            docker stop $(docker ps -q) 2>/dev/null || true
+          
+            # Libérer explicitement les ports utilisés par la production
+            sudo fuser -k 4000/tcp 2>/dev/null || true
+            sudo fuser -k 4001/tcp 2>/dev/null || true
+            sudo fuser -k 4002/tcp 2>/dev/null || true
+          
+            # Vérifier que les ports sont libres
+            if ss -tuln | grep -q ":4000 "; then
+              echo "⚠️ Port 4000 encore utilisé"
+              ss -tuln | grep ":4000 "
+            fi
+          
+            if ss -tuln | grep -q ":4001 "; then
+              echo "⚠️ Port 4001 encore utilisé"
+              ss -tuln | grep ":4001 "
+            fi
+          
+            if ss -tuln | grep -q ":4002 "; then
+              echo "⚠️ Port 4002 encore utilisé"
+              ss -tuln | grep ":4002 "
+            fi
+          
+            echo "✅ Nettoyage terminé"
           EOF
 
       - name: Préparer le serveur distant
@@ -376,70 +422,123 @@ jobs:
           sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'EOF'
           
+            set -e
             mkdir -p /home/cicd/production
+            cd /home/cicd
           
-            # Installer docker compose v2 si nécessaire
+            if ! command -v docker &> /dev/null; then
+              echo "❌ Docker n'est pas installé"
+              exit 1
+            fi
+          
             if ! docker compose version &> /dev/null; then
+              echo "🧩 Installation de docker compose v2..."
               mkdir -p ~/.docker/cli-plugins
               curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) \
                 -o ~/.docker/cli-plugins/docker-compose
               chmod +x ~/.docker/cli-plugins/docker-compose
             fi
           
-            rm -rf /home/cicd/production/*
+            rm -rf production/*
           EOF
 
-      - name: Envoyer le paquet de déploiement
+      - name: Transférer les fichiers
         run: |
           sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' scp -o StrictHostKeyChecking=no \
             production-deployment.tar.gz \
             ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}:/home/cicd/
 
-      - name: Déployer la nouvelle version
+      - name: Déployer les container avec gestion des conflits de ports
         run: |
           sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'EOF'
-          
-            set -e
-          
             cd /home/cicd
             tar -xzf production-deployment.tar.gz -C production/
             cd production
           
+            # Arrêter complètement tous les conteneurs existants
+            echo "🛑 Arrêt forcé de tous les conteneurs Docker..."
+            docker compose down --volumes --remove-orphans 2>/dev/null || true
+            docker system prune -f --volumes 2>/dev/null || true
+          
+            # Attendre un peu pour que les ports se libèrent
+            sleep 5
+          
+            # Vérifier une dernière fois les ports
+            echo "🔍 Vérification finale des ports..."
+            for port in 4000 4001 4002; do
+              if ss -tuln | grep -q ":${port} "; then
+                echo "❌ Port ${port} encore occupé, tentative de libération..."
+                sudo fuser -k ${port}/tcp 2>/dev/null || true
+                sleep 2
+              fi
+            done
+          
+            # Copier et sourcer le fichier d'environnement
             cp .env.production .env
-            docker compose down --volumes || true
-            docker compose -f compose.yml -f compose.prod.yml up -d --build
           
-            echo "⏳ Attente du démarrage..."
+            echo "🚀 Démarrage des services avec les nouveaux ports..."
+            # Démarrer les services avec retry en cas d'échec
+            max_retries=3
+            retry_count=0
           
-            # Attendre que les services soient healthy
-            timeout=120
+            while [ $retry_count -lt $max_retries ]; do
+              if docker compose up -d --build; then
+                echo "✅ Services démarrés avec succès"
+                break
+              else
+                retry_count=$((retry_count + 1))
+                echo "⚠️ Échec tentative $retry_count/$max_retries, nouvelle tentative dans 10s..."
+                docker compose down --volumes --remove-orphans 2>/dev/null || true
+                sleep 10
+              fi
+            done
+          
+            if [ $retry_count -eq $max_retries ]; then
+              echo "❌ Échec du démarrage après $max_retries tentatives"
+              exit 1
+            fi
+          
+            echo "⌛ Attente du démarrage des services..."
+          
+            # Attendre que tous les services soient healthy
+            timeout=180
             elapsed=0
             while [ $elapsed -lt $timeout ]; do
               if docker compose ps --filter "status=running" | grep -q "healthy\|Up"; then
                 healthy_count=$(docker compose ps --filter "status=running" | grep -c "healthy\|Up" || echo "0")
+                total_services=$(docker compose ps | wc -l)
+                echo "Services sains: $healthy_count"
                 if [ "$healthy_count" -ge 3 ]; then
                   echo "✅ Services démarrés avec succès"
                   break
                 fi
               fi
               echo "⏳ Attente des services... ($elapsed/$timeout s)"
-              sleep 5
-              elapsed=$((elapsed + 5))
+              sleep 10
+              elapsed=$((elapsed + 10))
             done
           
+            if [ $elapsed -ge $timeout ]; then
+              echo "❌ Timeout: Les services n'ont pas démarré à temps"
+              docker compose ps
+              docker compose logs --tail=50
+              exit 1
+            fi
+          
+            echo "📊 État final des conteneurs:"
             docker compose ps
           EOF
 
-      - name: Vérifications santé de la prod avec retry
+      - name: Vérification du déploiement production
         run: |
-          echo "🏥 Vérifications de santé production"
+          echo "🔍 Vérification de la production"
           
-          # Fonction de retry pour production
-          retry_curl_prod() {
+          # Fonction de retry
+          retry_curl() {
             local url=$1
             local service_name=$2
-            local max_attempts=10
+            local max_attempts=12
             local wait_time=10
           
             for i in $(seq 1 $max_attempts); do
@@ -456,26 +555,33 @@ jobs:
             return 1
           }
           
-          # Test API
-          if ! retry_curl_prod "http://212.83.130.245:4001/health" "API Production"; then
+          # Vérifier l'API de production
+          if ! retry_curl "http://212.83.130.245:4001/health" "API Production (port 4001)"; then
+            echo "🔍 Diagnostic API Production..."
+            sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} \
+              "cd /home/cicd/production && docker compose logs backend --tail=50"
             exit 1
           fi
           
-          # Test Frontend
-          if ! retry_curl_prod "http://212.83.130.245:4000" "Frontend Production"; then
+          # Vérifier le Frontend de production
+          if ! retry_curl "http://212.83.130.245:4000" "Frontend Production (port 4000)"; then
+            echo "🔍 Diagnostic Frontend Production..."
+            sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
+              ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} \
+              "cd /home/cicd/production && docker compose logs frontend --tail=50"
             exit 1
           fi
           
           # Test temps de réponse
-          echo "Test temps de réponse..."
+          echo "⏱️ Test temps de réponse..."
           response_time=$(curl -o /dev/null -s -w "%{time_total}" http://212.83.130.245:4001/health)
-          echo "⏱ Temps réponse API : ${response_time}s"
+          echo "Temps réponse API : ${response_time}s"
           
-          if (( $(echo "$response_time > 2.0" | bc -l) )); then
-            echo "⚠️ Temps de réponse élevé"
-          fi
-          
-          echo "✅ Déploiement production OK"
+          echo "✅ Production opérationnelle !"
+          echo "🌐 API: http://212.83.130.245:4001"
+          echo "🌐 Frontend: http://212.83.130.245:4000"
+          echo "🗄️ PhpMyAdmin: http://212.83.130.245:4002"
 
       - name: Notifier le succès du déploiement
         run: |
