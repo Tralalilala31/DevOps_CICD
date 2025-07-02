@@ -78,7 +78,7 @@ export const updateCard = async (
       return;
     }
 
-    const updatedCard = await cardService.updateCard(Number(id), updateData);
+    const updatedCard = await cardService.updateCard(id, updateData);
 
     if (!updatedCard) {
       res.status(404).json({
@@ -122,7 +122,7 @@ export const deleteCard = async (
       return;
     }
 
-    const success = await cardService.deleteCard(Number(id));
+    const success = await cardService.deleteCard(id);
 
     if (!success) {
       res.status(404).json({
