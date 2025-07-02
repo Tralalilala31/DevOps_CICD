@@ -103,11 +103,11 @@ jobs:
           sed -i 's/^PORT_PHPMYADMIN=.*/PORT_PHPMYADMIN=8082/' .env
           echo "🔧 Fichier .env modifié pour production"
 
-      - name: Créer le paquet de déploiement
+      - name: Envoyer les fichiers sur la VM
         run: |
-          tar -czf staging-deployment.tar.gz \
-            --exclude='*.tar.gz' \
-            .
+          rsync -avz --delete . \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/staging/
 
       - name: Importer le code
         run: |
@@ -119,8 +119,6 @@ jobs:
         run: |
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
-            rm -rf /home/cicd/staging/*
-            tar -xzf staging-deployment.tar.gz -C /home/cicd/staging
             cd /home/cicd/staging
             
             echo "🚀 Démarrage des services..."
@@ -155,17 +153,11 @@ jobs:
           sed -i 's/^PORT_PHPMYADMIN=.*/PORT_PHPMYADMIN=8080/' .env
           echo "🔧 Fichier .env modifié pour production"
 
-      - name: Créer le paquet de déploiement
+      - name: Envoyer les fichiers sur la VM
         run: |
-          tar -czf staging-deployment.tar.gz \
-            --exclude='*.tar.gz' \
-            .
-
-      - name: Transférer les fichiers
-        run: |
-          sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' scp -o StrictHostKeyChecking=no \
-            staging-deployment.tar.gz \
-            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/
+          rsync -avz --delete . \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/staging/
 
       - name: Backup de la production existante
         run: |
@@ -193,8 +185,6 @@ jobs:
         run: |
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
-            rm -rf /home/cicd/staging/*
-            tar -xzf staging-deployment.tar.gz -C /home/cicd/staging
             cd /home/cicd/staging
             
             echo "🚀 Démarrage des services..."
