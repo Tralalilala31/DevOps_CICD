@@ -4,6 +4,7 @@ on:
       - main
       - develop
       - cicd # TEMPORAIRE, supprimer
+  workflow_dispatch:
 
 name: Deploy on merge
 
