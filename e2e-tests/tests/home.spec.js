@@ -10,7 +10,11 @@ test("Vérification complète de la gestion des membres", async ({ page }) => {
     await page
       .locator('xpath=//input[@placeholder="Enter your name"]')
       .fill("NomTest");
+
     await page.locator('xpath=//button[text()="Save"]').click();
+
+    // ✅ Attendre que le modal disparaisse
+    await modal.waitFor({ state: "hidden", timeout: 5000 });
   }
 
   await page.waitForTimeout(500); // ou même 1000ms pour CI
