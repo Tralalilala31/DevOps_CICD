@@ -82,7 +82,7 @@ jobs:
           docker compose \
           -f compose.yml \
           -f compose.testing.yml \
-          up --build -d --wait e2e-tests
+          up --build -d --wait musql backend frontend e2e-tests
 
           docker compose --profile testing
 
@@ -91,7 +91,7 @@ jobs:
           docker compose \
           -f compose.yml \
           -f compose.testing.yml \
-          exec e2e-tests node tests/perf/perf-test.js
+          exec e2e-tests node tests/home.spec.js
 
   check_secrets:
     runs-on: ubuntu-latest
