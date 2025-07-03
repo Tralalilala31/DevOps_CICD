@@ -1,5 +1,4 @@
-
-# 📦 CI/CD DevOps – Gestion des Membres pour Angular Todo App
+# 📦 DevOps CI/CD – Gestion des Membres
 
 ## 🎓 Cadre pédagogique
 
@@ -13,7 +12,7 @@ L'objectif pédagogique est de maîtriser les processus CI/CD, la containerisati
 Le projet consiste à étendre une application Angular existante pour y intégrer une **gestion complète des membres** (ajout, édition, suppression) via un backend Node.js et une base MySQL, avec les objectifs suivants :
 
 - Mise en place d’une architecture **microservices** en containers
-- Gestion de la **base de données via Prisma**
+- Gestion de la **base de données via Sequelize**
 - Création d’un pipeline **CI/CD** automatisé avec **GitHub Actions**
 - **Dockerisation** complète de la stack (frontend, backend, BDD)
 - Déploiement sur un **VPS distant** avec vérification des services via healthcheck
@@ -39,28 +38,28 @@ project-root/
 
 ## ⚙️ Technologies utilisées
 
-| Côté | Stack |
-|------|-------|
-| Frontend | Angular 19, TypeScript |
-| Backend | Node.js, Express, Prisma, TypeScript |
-| Base de données | MySQL (via Docker) |
-| CI/CD | GitHub Actions |
-| Conteneurisation | Docker, Docker Compose |
-| Monitoring | Healthcheck HTTP + Webhook |
-| Sécurité | GitHub Secrets, gestion des ports, backup auto |
+| Côté             | Stack                                          |
+| ---------------- | ---------------------------------------------- |
+| Frontend         | Angular 19, TypeScript                         |
+| Backend          | Node.js, Express, Sequelize, TypeScript        |
+| Base de données  | MySQL (via Docker)                             |
+| CI/CD            | GitHub Actions                                 |
+| Conteneurisation | Docker, Docker Compose                         |
+| Monitoring       | Healthcheck HTTP + Webhook                     |
+| Sécurité         | GitHub Secrets, gestion des ports, backup auto |
 
 ---
 
 ## 👥 Équipe projet
 
-| Nom               | Rôle principal                                     | Contributions clés                                        |
-|--------------------|---------------------------------------------------|------------------------------------------------------------|
-| **Anas DAOUI**     | Développeur Frontend Angular                      | Gestion des membres, routing, formulaires réactifs, cards |
-| **Minh**           | Git & CI/CD                                       | Création des workflows GitHub Actions, structure Git      |
-| **Clément**        | Base de données                                   | Modélisation Prisma, migrations, liaison BDD              |
-| **Émile**          | Sécurité                                          | GitHub Secrets, scan images, verrouillage des ports       |
-| **Nathan**         | Développeur Backend Node.js                       | API REST, tests unitaires, gestion des routes, cards API  |
-| **Nicolas**        | Conteneurisation (Docker)                         | Dockerfiles, Docker Compose, orchestration réseau         |
+| Nom            | Rôle principal               | Contributions clés                                        |
+| -------------- | ---------------------------- | --------------------------------------------------------- |
+| **Anas DAOUI** | Développeur Frontend Angular | Gestion des membres, routing, formulaires réactifs, cards |
+| **Minh**       | Git & CI/CD                  | Création des workflows GitHub Actions, structure Git      |
+| **Clément**    | Base de données              | Modélisation Sequelize, migrations, liaison BDD           |
+| **Émile**      | Sécurité                     | GitHub Secrets, scan images, verrouillage des ports       |
+| **Nathan**     | Développeur Backend Node.js  | API REST, tests unitaires, gestion des routes, cards API  |
+| **Nicolas**    | Conteneurisation (Docker)    | Dockerfiles, Docker Compose, orchestration réseau         |
 
 🔄 Tous les membres ont collaboré de manière transversale sur la validation des tests, l'intégration des environnements et les déploiements.
 
@@ -70,10 +69,10 @@ project-root/
 
 Les environnements sont déployés automatiquement sur un VPS via SSH :
 
-- 🔁 Staging : [http://212.83.130.245:3000](http://212.83.130.245:3000)
-- ✅ Production : [http://212.83.130.245:4000](http://212.83.130.245:4000)
+- 🔁 Staging : [http://212.83.130.245:81](http://212.83.130.245:81)
+- ✅ Production : [http://212.83.130.245:80](http://212.83.130.245:80)
 
-Des ports spécifiques sont attribués à chaque environnement (3000/80/8080 pour staging, 4000/4001/4002 pour production).
+Des ports spécifiques sont attribués à chaque environnement (Frontend: 81, Backend: 3001, PhpMyAdmin: 8081 pour staging / Frontend: 80, Backend: 3000, PhpMyAdmin: 8080 pour production).
 
 ---
 
@@ -81,8 +80,8 @@ Des ports spécifiques sont attribués à chaque environnement (3000/80/8080 pou
 
 Le pipeline `ci-cd.yml` (voir `.github/workflows/`) gère les étapes suivantes :
 
-- `build_frontend` : build Angular via Docker Compose
-- `build_test_backend` : build + tests unitaires + intégration backend
+- `test_webhook` : test de connectivité webhook
+- `backend_tests` : build + tests unitaires backend
 - `perf_tests` : tests de performance automatisés
 - `e2e_tests` : tests end-to-end (cron chaque soir à 22h)
 - `deploy_staging` : déploiement sur serveur de test
@@ -90,6 +89,7 @@ Le pipeline `ci-cd.yml` (voir `.github/workflows/`) gère les étapes suivantes 
 - `notify_webhook_*` : notification webhook en cas de succès ou d’échec
 
 🧠 **Déclencheurs :**
+
 ```yaml
 on:
   push:
@@ -117,14 +117,15 @@ docker compose up -d --build
 ### 🔧 Lancement classique
 
 - Backend :
+
 ```bash
 cd back-end
 npm install
-npx prisma generate
 npm run dev
 ```
 
 - Frontend :
+
 ```bash
 cd front-end
 npm install
@@ -157,15 +158,15 @@ ng serve
 - Webhooks de notification : succès/échec
 - Protection des ports avec `fuser` et `ss`
 - Backup DB et services via `mysqldump`
-- Scanning des images Docker (à venir via `Trivy`)
+- Configuration sécurisée via GitHub Secrets
 
 ---
 
 ## 🧾 Liens utiles
 
 - 📁 Repo GitHub : [`DevOps_CICD`](https://github.com/Tralalilala31/DevOps_CICD.git)
-- 🌐 Staging : [http://212.83.130.245:3000](http://212.83.130.245:3000)
-- 🌐 Production : [http://212.83.130.245:4000](http://212.83.130.245:4000)
+- 🌐 Staging : [http://212.83.130.245:81](http://212.83.130.245:81)
+- 🌐 Production : [http://212.83.130.245:80](http://212.83.130.245:80)
 
 ---
 
