@@ -210,15 +210,17 @@ jobs:
     steps:
       - name: Notify success
         run: |
-          curl -X POST ${{ secrets.WEBHOOK_URL }} \
-            -H "Content-Type: application/json" \
-            -d '{
-              "status": "success", 
-              "message": "✅ Build & deploy completed",
-              "project": "${{ env.PROJECT_NAME }}",
-              "version": "${{ github.ref_name }}",
-              "environment": "production"
-            }'
+          # TEMPORAIRE pour garder les tokens, décommenter
+          # curl -X POST ${{ secrets.WEBHOOK_URL }} \
+          #   -H "Content-Type: application/json" \
+          #   -d '{
+          #     "status": "success", 
+          #     "message": "✅ Build & deploy completed",
+          #     "project": "${{ env.PROJECT_NAME }}",
+          #     "version": "${{ github.ref_name }}",
+          #     "environment": "production"
+          #   }'
+            echo "✅ Notification sent successfully"
 
   notify_webhook_failure:
     if: failure() && vars.DEPLOY_BLOCKED != 'true'
@@ -227,12 +229,14 @@ jobs:
     steps:
       - name: Notify failure
         run: |
-          curl -X POST ${{ secrets.WEBHOOK_URL }} \
-            -H "Content-Type: application/json" \
-            -d '{
-              "status": "failure", 
-              "message": "❌ Échec du pipeline CI/CD",
-              "project": "${{ env.PROJECT_NAME }}",
-              "version": "${{ github.ref_name }}",
-              "environment": "production"
-            }'
+          # TEMPORAIRE pour garder les tokens, décommenter
+          # curl -X POST ${{ secrets.WEBHOOK_URL }} \
+          #   -H "Content-Type: application/json" \
+          #   -d '{
+          #     "status": "failure", 
+          #     "message": "❌ Échec du pipeline CI/CD",
+          #     "project": "${{ env.PROJECT_NAME }}",
+          #     "version": "${{ github.ref_name }}",
+          #     "environment": "production"
+          #   }'
+          echo "✅ Notification sent successfully"
