@@ -1,40 +1,35 @@
 import { test, expect } from "@playwright/test";
 
 test("Création d'un membre", async ({ page }) => {
-  // Aller sur la page de todo pour déclencher le front
-  await page.goto("http://frontend:4200/todos");
-  await page.waitForTimeout(500);
+  // → On va directement sur la liste des membres
+  await page.goto("http://frontend:4200/members");
+  await expect(page).toHaveURL(/\/members$/);
 
-  // Gérer le modal d'accueil s'il apparaît
+  // 🔍 Si le modal « Enter your name » apparaît (CI), on le ferme
   const modal = page.locator("#userNameModal");
-  try {
-    await modal.waitFor({ state: "visible", timeout: 3000 });
-    await page.getByPlaceholder("Enter your name").fill("NomTest");
-    await page.getByRole("button", { name: /save/i }).click();
-    await expect(modal).toBeHidden({ timeout: 3000 });
-  } catch {
-    // pas de modal, on continue
+  if (await modal.isVisible()) {
+    await page.fill('input[placeholder="Enter your name"]', "NomTest");
+    await page.click("button:has-text(\"Save\")");
+    await expect(modal).toBeHidden();
   }
 
-  // Aller dans la gestion des membres
-  await page.getByRole("link", { name: /gestion des membres/i }).click();
-  await expect(page).toHaveURL(/.*members/);
+  // ⏳ On attend que le titre soit visible
   await expect(page.getByText("Liste des membres")).toBeVisible();
 
-  // Cliquer sur "Ajouter un membre"
-  await page.getByRole("button", { name: /ajouter un membre/i }).click();
-  await expect(page).toHaveURL(/.*members\/add/);
+  // ➕ Cliquer sur « Ajouter un membre »
+  await page.click("button:has-text(\"Ajouter un membre\")");
+  await expect(page).toHaveURL(/\/members\/add$/);
 
-  // Remplir le formulaire et soumettre
-  await page.locator('[formcontrolname="nom"]').fill("NomAutoTest");
-  await page.locator('[formcontrolname="prenom"]').fill("PrénomAuto");
-  await page.locator('[formcontrolname="email"]').fill("auto@test.com");
-  await page.locator('button[type="submit"]').click();
+  // 📝 Remplir le formulaire
+  await page.fill('[formcontrolname="nom"]', "NomAutoTest");
+  await page.fill('[formcontrolname="prenom"]', "PrénomAuto");
+  await page.fill('[formcontrolname="email"]', "auto@test.com");
 
-  // Attendre la fin des requêtes et vérifier que la table contient le nouveau membre
-  await expect(page).toHaveURL(/.*members/);
-  await page.waitForLoadState("networkidle");
-  const table = page.locator("table");
-  await table.waitFor({ state: "visible", timeout: 10_000 });
-  await expect(table).toContainText("NomAutoTest");
+  // ✅ Soumettre
+  await page.click('button[type="submit"]');
+
+  // ⏳ Retour sur la liste et vérification que la ligne apparaît
+  await expect(page).toHaveURL(/\/members$/);
+  const newRow = page.locator('tr:has-text("NomAutoTest")');
+  await expect(newRow).toBeVisible();
 });
