@@ -88,8 +88,41 @@ jobs:
       - name: Run E2E tests
         run: docker compose exec e2e node tests/home.spec.js
 
+  check_secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate required secrets for staging
+        run: |
+          echo "🔍 Validating staging secrets..."
+
+          # Database secrets
+          if [ -z "${{ secrets.DATABASE_ROOT_PASSWORD }}" ]; then
+            echo "❌ DATABASE_ROOT_PASSWORD is empty!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DATABASE_ADMIN_PASSWORD }}" ]; then
+            echo "❌ DATABASE_ADMIN_PASSWORD is empty!"
+            exit 1
+          fi
+
+          # SSH secrets
+          if [ -z "${{ secrets.STAGING_SSH_PASSWORD }}" ]; then
+            echo "❌ STAGING_SSH_PASSWORD is empty!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.STAGING_SSH_USER }}" ]; then
+            echo "❌ STAGING_SSH_USER is empty!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.STAGING_SSH_HOST }}" ]; then
+            echo "❌ STAGING_SSH_HOST is empty!"
+            exit 1
+          fi
+
+          echo "✅ All staging secrets are valid!"
+
   deploy_staging:
-    needs: [build, backend_tests]
+    needs: [build, backend_tests, check_secrets]
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -103,8 +136,8 @@ jobs:
 
       - name: Update environment variables for staging
         run: |
-          sed -i "s/^DATABASE_ROOT_PASSWORD=.*/DATABASE_ROOT_PASSWORD=${{ secrets.PROD_DATABASE_ROOT_PASSWORD }}/" .env
-          sed -i "s/^DATABASE_ADMIN_PASSWORD=.*/DATABASE_ADMIN_PASSWORD=${{ secrets.PROD_DATABASE_ADMIN_PASSWORD }}/" .env
+          sed -i "s/^DATABASE_ROOT_PASSWORD=.*/DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}/" .env
+          sed -i "s/^DATABASE_ADMIN_PASSWORD=.*/DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}/" .env
           sed -i 's/^PORT_FRONT=.*/PORT_FRONT=82/' .env
           sed -i 's/^PORT_BACK=.*/PORT_BACK=3002/' .env
           sed -i 's/^PORT_PHPMYADMIN=.*/PORT_PHPMYADMIN=8082/' .env
@@ -154,8 +187,8 @@ jobs:
 
       - name: Update environment variables for production
         run: |
-          sed -i "s/^DATABASE_ROOT_PASSWORD=.*/DATABASE_ROOT_PASSWORD=${{ secrets.PROD_DATABASE_ROOT_PASSWORD }}/" .env
-          sed -i "s/^DATABASE_ADMIN_PASSWORD=.*/DATABASE_ADMIN_PASSWORD=${{ secrets.PROD_DATABASE_ADMIN_PASSWORD }}/" .env
+          sed -i "s/^DATABASE_ROOT_PASSWORD=.*/DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}/" .env
+          sed -i "s/^DATABASE_ADMIN_PASSWORD=.*/DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}/" .env
           sed -i 's/^PORT_FRONT=.*/PORT_FRONT=80/' .env
           sed -i 's/^PORT_BACK=.*/PORT_BACK=3000/' .env
           sed -i 's/^PORT_PHPMYADMIN=.*/PORT_PHPMYADMIN=8080/' .env
