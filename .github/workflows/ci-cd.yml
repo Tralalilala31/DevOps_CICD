@@ -103,12 +103,20 @@ jobs:
             -f compose.testing.yml \
             logs backend
 
+      - name: Install E2E deps
+        run: |
+          docker compose \
+            -f compose.yml \
+            -f compose.testing.yml \
+            exec e2e-tests bash -lc "npm install && npx playwright install --with-deps"
+
       - name: Run E2E spec
         run: |
           docker compose \
             -f compose.yml \
             -f compose.testing.yml \
-            exec e2e-tests npm run test:e2e
+            --profile testing \
+            run --rm e2e-tests
 
   check_secrets:
     runs-on: ubuntu-latest
