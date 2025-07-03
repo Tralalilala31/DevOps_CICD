@@ -71,6 +71,7 @@ jobs:
           up --build --abort-on-container-exit backend-test
 
   e2e_tests:
+    needs: perf_tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -78,15 +79,33 @@ jobs:
 
       - name: Build & start full stack for E2E
         run: |
-          docker compose -f compose.yml \
-                         -f compose.testing.yml \
-                         --profile testing \
-                         up -d --build --wait mysql backend frontend e2e-tests
+          docker compose \
+            -f compose.yml \
+            -f compose.testing.yml \
+            --profile testing \
+            up -d --build --wait mysql backend frontend e2e-tests
+
+      # ← NOUVEAU : afficher les logs backend si le conteneur est déjà hors service
+      - name: Dump backend logs on failure
+        if: failure() || steps.build-and-start.outcome == 'failure'
+        run: |
+          echo "=== BACKEND LOGS ==="
+          docker compose \
+            -f compose.yml \
+            -f compose.testing.yml \
+            logs backend
 
       - name: Run E2E spec
-        run: docker compose -f compose.yml \
-          -f compose.testing.yml \
-          exec e2e-tests npm run test:e2e
+        run: |
+          docker compose \
+            -f compose.yml \
+            -f compose.testing.yml \
+            exec e2e-tests npm run test:e2e
+
+      - name: Teardown
+        if: always()
+        run: docker compose down -v --remove-orphans
+
 
   check_secrets:
     runs-on: ubuntu-latest
