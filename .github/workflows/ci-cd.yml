@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: ["**"]
   schedule:
-    - cron: "0 22 * * *"
+    - cron: "0 12 10 * *"
 
 name: CI/CD Pipeline
 
@@ -57,7 +57,7 @@ jobs:
         run: docker compose exec backend npm run test:unit
 
   perf_tests:
-    #if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
 
     steps:
@@ -78,7 +78,7 @@ jobs:
             up --abort-on-container-exit --exit-code-from backend-test
 
   e2e_tests:
-    #if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
