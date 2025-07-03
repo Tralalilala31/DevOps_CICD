@@ -78,7 +78,7 @@ services:
     image: mcr.microsoft.com/playwright:v1.53.2-jammy
     working_dir: /tests
     volumes:
-      - ./e2e-tests:/tests
+      - e2e_tests_data:/tests
     depends_on:
       frontend:
         condition: service_healthy
@@ -90,3 +90,4 @@ services:
 
 volumes:
   mysql-data:
+  e2e_tests_data:
