@@ -78,6 +78,11 @@ describe("Tests CRUD Utilisateur - Controllers avec Mocks", () => {
       const req = mockRequest();
       const res = mockResponse();
 
+      // Mock ciblé de console.error pour ce test spécifique
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
       mockUserService.getAllUsers.mockRejectedValue(new Error("Erreur DB"));
 
       await userController.getAllUsers(req, res);
@@ -87,6 +92,15 @@ describe("Tests CRUD Utilisateur - Controllers avec Mocks", () => {
         success: false,
         error: "Erreur DB",
       });
+
+      // Vérifier que l'erreur a bien été loggée
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Erreur lors de la récupération des utilisateurs:",
+        expect.any(Error)
+      );
+
+      // Restaurer console.error
+      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -214,6 +228,11 @@ describe("Tests CRUD Utilisateur - Controllers avec Mocks", () => {
       const res = mockResponse();
       req.body = testUser;
 
+      // Mock ciblé de console.error pour ce test spécifique
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
       jest
         .spyOn(require("../utils/validation"), "validateUserData")
         .mockReturnValue({
@@ -232,6 +251,15 @@ describe("Tests CRUD Utilisateur - Controllers avec Mocks", () => {
         success: false,
         error: "Email déjà utilisé",
       });
+
+      // Vérifier que l'erreur a bien été loggée
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Erreur lors de la création de l'utilisateur:",
+        expect.any(Error)
+      );
+
+      // Restaurer console.error
+      consoleErrorSpy.mockRestore();
     });
   });
 
