@@ -148,9 +148,9 @@ jobs:
         run: |
           sed -i "s/^DATABASE_ROOT_PASSWORD=.*/DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}/" .env
           sed -i "s/^DATABASE_ADMIN_PASSWORD=.*/DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}/" .env
-          sed -i 's/^PORT_FRONT=.*/PORT_FRONT=82/' .env
-          sed -i 's/^PORT_BACK=.*/PORT_BACK=3002/' .env
-          sed -i 's/^PORT_PMA=.*/PORT_PMA=8082/' .env
+          sed -i 's/^PORT_FRONT=.*/PORT_FRONT=81/' .env
+          sed -i 's/^PORT_BACK=.*/PORT_BACK=3001/' .env
+          sed -i 's/^PORT_PMA=.*/PORT_PMA=8081/' .env
           echo "🔧 Environment file updated for staging"
 
       - name: Deploy files to staging server
@@ -257,7 +257,6 @@ jobs:
         run: |
           echo "🎉 Production deployed successfully!"
           echo "Version: ${{ github.ref_name }}"
-          echo "URL: http://212.83.130.245:4000"
 
   notify_webhook_success:
     if: success()
