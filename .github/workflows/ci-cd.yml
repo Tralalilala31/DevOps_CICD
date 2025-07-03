@@ -83,7 +83,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Start containers for E2E tests
-        run: docker compose up --build
+        run: docker compose up --build -d
 
       - name: Run E2E tests
         run: docker compose exec e2e node tests/home.spec.js
