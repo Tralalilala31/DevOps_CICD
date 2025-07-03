@@ -128,16 +128,16 @@ jobs:
             exit 1
           fi
           # SSH secrets
-          if [ -z "${{ secrets.PROD_RSA }}" ]; then
-            echo "❌ PROD_RSA is empty!"
+          if [ -z "${{ secrets.RSA }}" ]; then
+            echo "❌ RSA is empty!"
             exit 1
           fi
-          if [ -z "${{ secrets.STAGING_SSH_USER }}" ]; then
-            echo "❌ STAGING_SSH_USER is empty!"
+          if [ -z "${{ secrets.SSH_USER }}" ]; then
+            echo "❌ SSH_USER is empty!"
             exit 1
           fi
-          if [ -z "${{ secrets.STAGING_SSH_HOST }}" ]; then
-            echo "❌ STAGING_SSH_HOST is empty!"
+          if [ -z "${{ secrets.SSH_HOST }}" ]; then
+            echo "❌ SSH_HOST is empty!"
             exit 1
           fi
           if [ -z "${{ secrets.WEBHOOK_URL }}" ]; then
@@ -160,9 +160,9 @@ jobs:
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.PROD_RSA }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.RSA }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.STAGING_SSH_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Update environment variables for staging
         run: |
@@ -177,12 +177,12 @@ jobs:
         run: |
           rsync -avz --delete . \
             -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
-            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/staging/
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/cicd/staging/
 
       - name: Start staging containers
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
-            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             set -e
             cd /home/cicd/staging
 
@@ -217,9 +217,9 @@ jobs:
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.PROD_RSA }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.RSA }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.STAGING_SSH_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Update environment variables for production
         run: |
@@ -234,12 +234,12 @@ jobs:
         run: |
           rsync -avz --delete . \
             -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
-            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/production/
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/cicd/production/
 
       - name: Backup existing production
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
-            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             set -e
 
             BACKUP_DIR="/home/cicd/backups/$(date +%Y%m%d_%H%M%S)"
@@ -260,7 +260,7 @@ jobs:
       - name: Start production containers
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
-            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             set -e
             cd /home/cicd/production
 
