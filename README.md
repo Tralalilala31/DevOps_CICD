@@ -1,5 +1,13 @@
 # CICD
 
+## Environnements disponibles
+
+| Environnement   | Description                          | Utilisation                              | Frontend | Backend | PhpMyAdmin |
+| --------------- | ------------------------------------ | ---------------------------------------- | -------- | ------- | ---------- |
+| **Development** | Développement local avec hot-reload  | Développement et debug                   | `81`     | `3001`  | `8081`     |
+| **Staging**     | Environnement de test pré-production | Tests d'intégration et validation        | `82`     | `3002`  | `8082`     |
+| **Production**  | Environnement de production          | Application finale pour les utilisateurs | `80`     | `3000`  | `8080`     |
+
 ## Production
 
 ### Nettoyage des fichiers
