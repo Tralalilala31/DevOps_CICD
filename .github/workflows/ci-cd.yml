@@ -123,8 +123,8 @@ jobs:
             exit 1
           fi
           # SSH secrets
-          if [ -z "${{ secrets.STAGING_SSH_PASSWORD }}" ]; then
-            echo "❌ STAGING_SSH_PASSWORD is empty!"
+          if [ -z "${{ secrets.PROD_RSA }}" ]; then
+            echo "❌ PROD_RSA is empty!"
             exit 1
           fi
           if [ -z "${{ secrets.STAGING_SSH_USER }}" ]; then
@@ -151,8 +151,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install SSH tools
-        run: sudo apt-get update && sudo apt-get install -y sshpass
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PROD_RSA }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.STAGING_SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Update environment variables for staging
         run: |
@@ -165,13 +169,13 @@ jobs:
 
       - name: Deploy files to staging server
         run: |
-          sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' rsync -avz --delete . \
-            -e "ssh -o StrictHostKeyChecking=no" \
+          rsync -avz --delete . \
+            -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/staging/
 
       - name: Start staging containers
         run: |
-          sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
             set -e
             cd /home/cicd/staging
@@ -189,6 +193,10 @@ jobs:
             ps
           EOF
 
+      - name: Cleanup SSH Key
+        if: always()
+        run: rm -f ~/.ssh/id_rsa
+
   deploy_production:
     needs: deploy_staging
     if: github.ref == 'refs/heads/main'
@@ -200,8 +208,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install SSH tools
-        run: sudo apt-get update && sudo apt-get install -y sshpass
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PROD_RSA }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.STAGING_SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Update environment variables for production
         run: |
@@ -214,14 +226,14 @@ jobs:
 
       - name: Deploy files to production server
         run: |
-          sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' rsync -avz --delete . \
-            -e "ssh -o StrictHostKeyChecking=no" \
+          rsync -avz --delete . \
+            -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/production/
 
       - name: Backup existing production
         run: |
-          sshpass -p '${{ secrets.PROD_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
-            ${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
             set -e
 
             BACKUP_DIR="/home/cicd/backups/$(date +%Y%m%d_%H%M%S)"
@@ -241,7 +253,7 @@ jobs:
 
       - name: Start production containers
         run: |
-          sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no \
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
             ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }} << 'EOF'
             set -e
             cd /home/cicd/production
@@ -260,6 +272,10 @@ jobs:
             -f compose.prod.yml \
             ps
           EOF
+
+      - name: Cleanup SSH Key
+        if: always()
+        run: rm -f ~/.ssh/id_rsa
 
   notify_webhook_success:
     if: success()
