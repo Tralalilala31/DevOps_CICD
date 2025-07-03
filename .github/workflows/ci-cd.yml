@@ -67,7 +67,7 @@ jobs:
         run: |
           docker compose \
           -f compose.yml \
-          -f compose.prod.yml \
+          -f compose.testing.yml \
           up \
           -d \
           --build
@@ -76,7 +76,7 @@ jobs:
         run: |
           docker compose \
           -f compose.yml \
-          -f compose.prod.yml \
+          -f compose.testing.yml \
           exec backend node tests/perf/perf-test.js
 
   e2e_tests:
