@@ -9,7 +9,11 @@ test("Vérification complète de la gestion des membres", async ({ page }) => {
   if (await modal.isVisible()) {
     await page.getByPlaceholder("Enter your name").fill("NomTest");
     await page.getByRole("button", { name: /save/i }).click();
+
+    // ✅ Attendre que le modal disparaisse complètement
+    await modal.waitFor({ state: "hidden", timeout: 5000 });
   }
+
   await page.waitForTimeout(500); // ou même 1000ms pour CI
 
   // ⏳ Attente que la page soit chargée
