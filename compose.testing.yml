@@ -3,6 +3,7 @@ services:
   backend:
     image: devops_cicd-backend:latest
     build:
+      context: ./back-end
       target: prod
 
   backend-test:
