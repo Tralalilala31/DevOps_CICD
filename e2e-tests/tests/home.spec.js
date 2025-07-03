@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test("Accès + modal si présent", async ({ page }) => {
-  await page.goto("http://localhost/todos");
+  await page.goto("http://frontend:4200/todos");
   await page.waitForTimeout(500); // attente courte pour chargement
 
   const modal = page.locator("#userNameModal");
