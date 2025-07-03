@@ -93,7 +93,8 @@ jobs:
        # run: docker compose --profile testing exec e2e-tests node tests/home.spec.js
 
       - name: Run E2E tests
-        run: docker compose --profile testing exec e2e-tests npm run test:e2e
+        run: docker compose --profile testing up --build --exit-code-from e2e-tests
+
 
 
   check_secrets:

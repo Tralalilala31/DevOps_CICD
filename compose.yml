@@ -86,7 +86,8 @@ services:
       - testing
     command: >
       bash -c "npx playwright install --with-deps &&
-               npx playwright test"
+               npm install &&
+               npm run test:e2e"
 
 volumes:
   mysql-data:
