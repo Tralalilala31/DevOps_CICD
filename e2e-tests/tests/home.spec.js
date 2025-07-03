@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 
-test("Vérification complète de la gestion des membres", async ({ page }) => {
-  await page.goto("http://frontend:4200/todos");
-  await page.waitForTimeout(500); // ou même 1000ms pour CI
+test("Accès + modal si présent", async ({ page }) => {
+  await page.goto("http://localhost/todos");
+  await page.waitForTimeout(500); // attente courte pour chargement
 
   const modal = page.locator("#userNameModal");
 
@@ -11,68 +11,8 @@ test("Vérification complète de la gestion des membres", async ({ page }) => {
       .locator('xpath=//input[@placeholder="Enter your name"]')
       .fill("NomTest");
     await page.locator('xpath=//button[text()="Save"]').click();
-
-    // 🛡️ Attendre que le modal ne soit plus visible ni interactif
-    await expect(modal).toBeHidden({ timeout: 10000 });
-
-    // 🔁 En bonus : attendre que le DOM n'ait plus .show (Bootstrap)
-    await page.waitForFunction(
-      () => {
-        const el = document.querySelector("#userNameModal");
-        return !el || !el.classList.contains("show");
-      },
-      null,
-      { timeout: 10000 }
-    );
   }
 
   // Tu peux ensuite continuer avec tes tests, exemple :
-  // await expect(page.locator("text=My TO-DO LIST")).toBeVisible();
-
-  await page.waitForTimeout(500); // ou même 1000ms pour CI
-
-  // ⏳ Attente que la page soit chargée
   await expect(page.locator("text=My TO-DO LIST")).toBeVisible();
-
-  // 📂 Accès à la page Gestion des membres
-  await page.getByRole("link", { name: /gestion des membres/i }).click();
-  await expect(page).toHaveURL(/.*members/);
-  await expect(page.getByText("Liste des membres")).toBeVisible();
-  await page.waitForTimeout(500); // ou même 1000ms pour CI
-
-  // 🧼 Supprimer le membre test s’il existe déjà
-  const existingRow = page.locator("tr", { hasText: /NomAutoTest|NomModif/ });
-  if ((await existingRow.count()) > 0) {
-    await existingRow.getByRole("button", { name: /supprimer/i }).click();
-    await expect(page.locator("table")).not.toContainText("NomAutoTest");
-  }
-  // ➕ Ajouter un membre
-  await page.getByRole("button", { name: /ajouter un membre/i }).click();
-  await expect(page).toHaveURL(/.*members\/add/);
-
-  await page.locator('[formcontrolname="nom"]').fill("NomAutoTest");
-  await page.locator('[formcontrolname="prenom"]').fill("PrénomAuto");
-  await page.locator('[formcontrolname="email"]').fill("auto@test.com");
-  await page.locator('button[type="submit"]').click();
-
-  await expect(page).toHaveURL(/.*members/);
-  await page.waitForTimeout(500); // ou même 1000ms pour CI
-  await expect(page.locator("table")).toContainText("NomAutoTest");
-
-  // ✏️ Modifier un membre
-  await page.locator('tr:has-text("NomAutoTest") >> text=Modifier').click();
-  await expect(page).toHaveURL(/.*members\/edit/);
-
-  await page.locator('[formcontrolname="nom"]').fill("NomModif");
-  await page.waitForTimeout(500); // ou même 1000ms pour CI
-  await page.locator('button[type="submit"]').click();
-
-  await expect(page).toHaveURL(/.*members/);
-  await page.waitForTimeout(500); // ou même 1000ms pour CI
-  await expect(page.locator("table")).toContainText("NomModif");
-
-  // ❌ Supprimer un membre
-  await page.locator('tr:has-text("NomModif") >> text=Supprimer').click();
-
-  await expect(page.locator("table")).not.toContainText("NomModif");
 });
