@@ -82,7 +82,7 @@ jobs:
           docker compose \
           -f compose.yml \
           -f compose.testing.yml \
-          up --build -d --wait musql backend frontend e2e-tests
+          up --build -d --wait mysql backend frontend e2e-tests
 
           docker compose --profile testing
 
