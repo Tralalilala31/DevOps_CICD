@@ -78,7 +78,7 @@ jobs:
             up --abort-on-container-exit --exit-code-from backend-test
 
   e2e_tests:
-    if: github.event_name == 'schedule'
+    # if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
