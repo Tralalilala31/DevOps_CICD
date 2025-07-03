@@ -38,29 +38,12 @@ jobs:
       PORT_PMA: 8080
     steps:
       - uses: actions/checkout@v3
-
-      - name: Check current deployment status
-        run: |
-          if [ "${{ vars.DEPLOY_BLOCKED }}" == "true" ]; then
-            echo "⚠️  Les déploiements sont actuellement bloqués suite à des échecs de tests e2e précédents"
-            echo "🔄 Exécution des tests e2e pour vérifier s'ils passent maintenant..."
-          else
-            echo "✅ Les déploiements sont autorisés"
-            echo "🔄 Exécution des tests e2e de routine..."
-          fi
-
       - name: Build & start full stack for E2E (sans e2e-tests)
         run: |
           docker compose \
             -f compose.yml \
             -f compose.testing.yml \
             up -d --build --wait mysql backend frontend
-
-      - name: Dump backend logs on failure
-        if: failure()
-        run: |
-          echo "=== BACKEND LOGS ==="
-          docker compose -f compose.yml -f compose.testing.yml logs backend
 
       - name: Run E2E spec (dans un conteneur frais)
         id: e2e_test
@@ -70,10 +53,12 @@ jobs:
             -f compose.testing.yml \
             run --rm e2e-tests
 
+  block_deployments:
+    needs: e2e_tests
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
       - name: Block deployments on E2E failure
-        if: failure()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "❌ Tests e2e échoués - Blocage des déploiements"
           curl -L \
@@ -84,10 +69,25 @@ jobs:
             https://api.github.com/repos/${{ github.repository }}/actions/variables/DEPLOY_BLOCKED \
             -d '{"name":"DEPLOY_BLOCKED","value":"true"}'
 
+      - name: Notify about deployment block
+        run: |
+          echo "Envoi d'une notification d'alerte"
+          curl -X POST ${{ secrets.WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d '{
+              "status": "blocked", 
+              "message": "🚫 Déploiements bloqués - Tests e2e en échec",
+              "project": "${{ env.PROJECT_NAME }}",
+              "version": "${{ github.ref_name }}",
+              "environment": "all"
+            }'
+
+  unblock_deployments:
+    needs: e2e_tests
+    if: success() && vars.DEPLOY_BLOCKED == 'true'
+    runs-on: ubuntu-latest
+    steps:
       - name: Unblock deployments on E2E success
-        if: success() && vars.DEPLOY_BLOCKED == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "✅ Tests e2e réussis - Déblocage des déploiements"
           curl -L \

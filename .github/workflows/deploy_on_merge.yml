@@ -64,24 +64,6 @@ jobs:
           fi
           echo "✅ All secrets are valid!"
 
-  notify_blocked_deployments:
-    if: vars.DEPLOY_BLOCKED == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notify blocked deployments
-        run: |
-          echo "🚫 Déploiements bloqués suite à des échecs de tests e2e"
-          echo "Les tests e2e doivent passer avant de pouvoir déployer"
-          curl -X POST ${{ secrets.WEBHOOK_URL }} \
-            -H "Content-Type: application/json" \
-            -d '{
-              "status": "blocked", 
-              "message": "🚫 Déploiements bloqués - Tests e2e en échec",
-              "project": "${{ env.PROJECT_NAME }}",
-              "version": "${{ github.ref_name }}",
-              "environment": "all"
-            }' || true
-
   deploy_staging:
     needs: [backend_tests, check_secrets]
     # if: github.ref == 'refs/heads/develop' # TEMPORAIRE, décommenter
