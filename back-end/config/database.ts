@@ -42,7 +42,7 @@ export const connectDB = async (): Promise<void> => {
     }
     // En production, on ne devrait pas synchroniser les modèles mais on le fait le projet
     else if (process.env.NODE_ENV === "production") {
-      await sequelize.sync({ alter: true });
+      await sequelize.sync({ alter: false });
       console.log("📊 Modèles synchronisés avec la base de données");
     }
   } catch (error) {
