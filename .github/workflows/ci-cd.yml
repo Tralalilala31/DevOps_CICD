@@ -73,7 +73,11 @@ jobs:
           --build
 
       - name: Run performance tests
-        run: docker compose exec backend node tests/perf/perf-test.js
+        run: |
+          docker compose \
+          -f compose.yml \
+          -f compose.prod.yml \
+          exec backend node tests/perf/perf-test.js
 
   e2e_tests:
     runs-on: ubuntu-latest
