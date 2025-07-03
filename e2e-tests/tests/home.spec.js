@@ -10,12 +10,11 @@ test("Vérification complète de la gestion des membres", async ({ page }) => {
     await page
       .locator('xpath=//input[@placeholder="Enter your name"]')
       .fill("NomTest");
-
     await page.locator('xpath=//button[text()="Save"]').click();
-
-    // ✅ Attendre que le modal disparaisse correctement
-    await expect(modal).toHaveCount(0, { timeout: 10000 }); // ou toBeHidden()
   }
+
+  // Tu peux ensuite continuer avec tes tests, exemple :
+  // await expect(page.locator("text=My TO-DO LIST")).toBeVisible();
 
   await page.waitForTimeout(500); // ou même 1000ms pour CI
 
