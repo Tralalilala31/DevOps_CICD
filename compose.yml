@@ -78,7 +78,7 @@ services:
     image: mcr.microsoft.com/playwright:v1.53.2-jammy
     working_dir: /app
     volumes:
-      - e2e_tests:/app
+      - e2e-tests:/app
     depends_on:
       frontend:
         condition: service_healthy
