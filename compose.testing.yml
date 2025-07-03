@@ -2,17 +2,19 @@ name: ${PROJECT_NAME}-testing
 services:
   backend:
     build:
-      context: ./back-end
       target: prod
 
   backend-test:
-    build:
-      context: ./back-end
-      target: build
+    image: node:20-alpine
     depends_on:
       backend:
         condition: service_healthy
-    command: node tests/perf/perf-test.js
+    volumes:
+      - ./back-end:/app
+    working_dir: /app
+    command: >
+      sh -c "npm install &&
+            node ./tests/perf/perf-test.js"
 
   e2e-tests:
     image: mcr.microsoft.com/playwright:v1.53.2-jammy
