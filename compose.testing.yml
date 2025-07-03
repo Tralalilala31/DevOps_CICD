@@ -1,8 +1,17 @@
+name: ${PROJECT_NAME}-testing
 services:
   backend:
     build:
+      target: prod
+
+  backend-test:
+    build:
       context: ./back-end
       target: build
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: node tests/perf/perf-test.js
 
   e2e-tests:
     image: mcr.microsoft.com/playwright:v1.53.2-jammy
@@ -16,3 +25,6 @@ services:
       bash -c "npx playwright install --with-deps &&
                npm install &&
                npm run test:e2e"
+volumes:
+  mysql-data:
+    name: "${PROJECT_NAME}-testing-db"
