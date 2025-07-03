@@ -247,11 +247,6 @@ jobs:
             ps
           EOF
 
-      - name: Notify deployment success
-        run: |
-          echo "🎉 Production deployed successfully!"
-          echo "Version: ${{ github.ref_name }}"
-
   notify_webhook_success:
     if: success()
     needs: [deploy_staging, deploy_production]
