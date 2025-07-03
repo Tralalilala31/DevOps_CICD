@@ -54,3 +54,16 @@ up \
 ```
 
 Contrairement à la production, il n'est pas nécessaire de spécifier les fichiers compose, car le fichier `docker-compose.override.yml` est pris en compte par défaut.
+
+## Staging (pré production)
+
+Pour le staging, il faut utiliser le fichier `compose.staging.yml` qui est une copie du fichier de production mais sans redémarrage des services. Cela permet de mieux déboguer en pré-production.
+
+```bash
+docker compose \
+-f compose.yml \
+-f compose.staging.yml \
+up \
+-d \
+--build
+```

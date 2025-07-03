@@ -1,0 +1,13 @@
+name: ${PROJECT_NAME}-staging
+services:
+  backend:
+    build:
+      target: prod
+
+  frontend:
+    build:
+      target: prod
+
+volumes:
+  mysql-data:
+    name: "${PROJECT_NAME}-staging-db"
