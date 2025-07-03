@@ -199,7 +199,7 @@ jobs:
         run: |
           sshpass -p '${{ secrets.STAGING_SSH_PASSWORD }}' rsync -avz --delete . \
             -e "ssh -o StrictHostKeyChecking=no" \
-            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/staging/
+            ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:/home/cicd/production/
 
       - name: Backup existing production
         run: |
