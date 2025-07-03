@@ -76,9 +76,9 @@ services:
 
   e2e-tests:
     image: mcr.microsoft.com/playwright:v1.53.2-jammy
-    working_dir: /tests
+    working_dir: /app
     volumes:
-      - e2e_tests_data:/tests
+      - e2e_tests_data:/app
     depends_on:
       frontend:
         condition: service_healthy
