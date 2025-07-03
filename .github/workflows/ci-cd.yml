@@ -64,7 +64,8 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Building backend service
-        run: docker compose \
+        run: |
+          docker compose \
           -f compose.yml \
           -f compose.testing.yml \
           build backend
