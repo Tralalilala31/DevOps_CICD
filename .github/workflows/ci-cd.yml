@@ -63,12 +63,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Start backend service for performance tests
+        run: docker compose up -d --build backend
+
       - name: Run performance tests
         run: |
           docker compose \
             -f compose.yml \
             -f compose.testing.yml \
-            up --build --abort-on-container-exit --exit-code-from backend-test backend
+            up --abort-on-container-exit --exit-code-from backend-test
 
   e2e_tests:
     runs-on: ubuntu-latest
@@ -102,7 +105,6 @@ jobs:
           docker compose \
             -f compose.yml \
             -f compose.testing.yml \
-            --profile testing \
             run --rm e2e-tests
 
   check_secrets:
