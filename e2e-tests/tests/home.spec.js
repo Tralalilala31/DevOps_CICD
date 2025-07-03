@@ -13,8 +13,8 @@ test("Vérification complète de la gestion des membres", async ({ page }) => {
 
     await page.locator('xpath=//button[text()="Save"]').click();
 
-    // ✅ Attendre que le modal disparaisse
-    await modal.waitFor({ state: "hidden", timeout: 5000 });
+    // ✅ Attendre que le modal disparaisse correctement
+    await expect(modal).toHaveCount(0, { timeout: 10000 }); // ou toBeHidden()
   }
 
   await page.waitForTimeout(500); // ou même 1000ms pour CI
