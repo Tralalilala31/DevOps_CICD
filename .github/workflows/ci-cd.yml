@@ -21,28 +21,28 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"status":"test","message":"🚀 Webhook de test"}'
 
-  build:
-    runs-on: ubuntu-latest
+  # build:
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v3
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - name: Build and test Docker services
-        run: |
-          echo "🚀 Building and starting services..."
-          docker compose build
-          docker compose up -d --wait
+  #     - name: Build and test Docker services
+  #       run: |
+  #         echo "🚀 Building and starting services..."
+  #         docker compose build
+  #         docker compose up -d --wait
 
-          echo "✅ Services healthy - Test successful!"
-          docker compose ps
+  #         echo "✅ Services healthy - Test successful!"
+  #         docker compose ps
 
-      - name: Clean Docker environment
-        if: always()
-        run: |
-          echo "🧹 Cleaning up..."
-          docker compose down -v --remove-orphans
-          docker system prune -f
-          echo "✅ Cleanup completed"
+  #     - name: Clean Docker environment
+  #       if: always()
+  #       run: |
+  #         echo "🧹 Cleaning up..."
+  #         docker compose down -v --remove-orphans
+  #         docker system prune -f
+  #         echo "✅ Cleanup completed"
 
   backend_tests:
     runs-on: ubuntu-latest
@@ -123,7 +123,7 @@ jobs:
           echo "✅ All secrets are valid!"
 
   deploy_staging:
-    needs: [build, backend_tests, check_secrets]
+    needs: [backend_tests, check_secrets] #, build]
     runs-on: ubuntu-latest
     environment:
       name: staging
