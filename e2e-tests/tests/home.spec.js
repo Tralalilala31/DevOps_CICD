@@ -5,12 +5,29 @@ test("Vérification complète de la gestion des membres", async ({ page }) => {
   await page.waitForTimeout(500); // ou même 1000ms pour CI
 
   const modal = page.locator("#userNameModal");
+  const backdrop = page.locator(".modal-backdrop");
 
   if (await modal.isVisible()) {
     await page
       .locator('xpath=//input[@placeholder="Enter your name"]')
       .fill("NomTest");
     await page.locator('xpath=//button[text()="Save"]').click();
+
+    // 🛡️ Attendre que le modal soit réellement masqué
+    await expect(modal).toBeHidden({ timeout: 10000 });
+
+    // 🛡️ Attendre aussi que le backdrop disparaisse
+    await expect(backdrop).toHaveCount(0, { timeout: 10000 });
+
+    // Bonus : si la classe "show" persiste, attendre qu’elle disparaisse
+    await page.waitForFunction(
+      () => {
+        const b = document.querySelector(".modal-backdrop");
+        return !b || !b.classList.contains("show");
+      },
+      null,
+      { timeout: 10000 }
+    );
   }
 
   // Tu peux ensuite continuer avec tes tests, exemple :
