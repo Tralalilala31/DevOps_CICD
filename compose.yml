@@ -90,4 +90,4 @@ services:
 
 volumes:
   mysql-data:
-  e2e_tests_data:
+  e2e_tests:
