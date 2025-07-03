@@ -155,3 +155,4 @@ test("Vérification complète de la gestion des membres", async ({ page }) => {
     }
   );
 });
+//test e2e
