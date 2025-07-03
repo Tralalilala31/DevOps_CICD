@@ -1,18 +1,14 @@
 on:
   push:
-    branches: ["**"]
-  pull_request:
-    branches: ["**"]
-  schedule:
-    - cron: "30 12 * * *"
+    branches:
+      - main
+      - develop
 
-name: CI/CD Pipeline
-
-env:
-  PROJECT_NAME: cicd_project
+name: Deploy on merge
 
 jobs:
   test_webhook:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Test webhook
@@ -21,32 +17,8 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"status":"test","message":"🚀 Webhook de test"}'
 
-  # build:
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - uses: actions/checkout@v3
-
-  #     - name: Build and test Docker services
-  #       run: |
-  #         echo "🚀 Building and starting services..."
-  #         docker compose build
-  #         docker compose up -d --wait
-
-  #         echo "✅ Services healthy - Test successful!"
-  #         docker compose ps
-
-  #     - name: Clean Docker environment
-  #       if: always()
-  #       run: |
-  #         echo "🧹 Cleaning up..."
-  #         docker compose down -v --remove-orphans
-  #         docker system prune -f
-  #         echo "✅ Cleanup completed"
-
   backend_tests:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
 
@@ -55,62 +27,6 @@ jobs:
 
       - name: Run backend unit tests
         run: docker compose exec backend npm run test:unit
-
-  perf_tests:
-    if: github.event_name == 'schedule'
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Building backend service
-        run: |
-          docker compose \
-          -f compose.yml \
-          -f compose.testing.yml \
-          build backend
-
-      - name: Run performance tests
-        run: |
-          docker compose \
-            -f compose.yml \
-            -f compose.testing.yml \
-            up --abort-on-container-exit --exit-code-from backend-test
-
-  e2e_tests:
-    # if: github.event_name == 'schedule'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      MYSQL_VERSION: 8.0
-      DATABASE_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
-      DATABASE_ADMIN_PASSWORD: ${{ secrets.DATABASE_ADMIN_PASSWORD }}
-      PROJECT_NAME: cicd_project
-      PORT_BACK: 3000
-      PORT_FRONT: 4200
-      PORT_PMA: 8080
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Build & start full stack for E2E (sans e2e-tests)
-        run: |
-          docker compose \
-            -f compose.yml \
-            -f compose.testing.yml \
-            up -d --build --wait mysql backend frontend
-
-      - name: Dump backend logs on failure
-        if: failure()
-        run: |
-          echo "=== BACKEND LOGS ==="
-          docker compose -f compose.yml -f compose.testing.yml logs backend
-
-      - name: Run E2E spec (dans un conteneur frais)
-        run: |
-          docker compose \
-            -f compose.yml \
-            -f compose.testing.yml \
-            run --rm e2e-tests
 
   check_secrets:
     runs-on: ubuntu-latest
@@ -147,9 +63,9 @@ jobs:
           echo "✅ All secrets are valid!"
 
   deploy_staging:
-    needs: [test_webhook, backend_tests, check_secrets] #, build]
+    needs: [backend_tests, check_secrets]
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
-    #if: github.ref == 'refs/heads/develop'
     environment:
       name: staging
       url: http://212.83.130.245:81
@@ -204,7 +120,7 @@ jobs:
         run: rm -f ~/.ssh/id_rsa
 
   deploy_production:
-    needs: [test_webhook, backend_tests, check_secrets] #, build]
+    needs: [test_webhook, backend_tests, check_secrets]
     #if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:

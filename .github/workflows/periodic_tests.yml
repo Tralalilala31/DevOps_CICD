@@ -1,0 +1,59 @@
+on:
+  schedule:
+    - cron: "30 12 * * *"
+
+name: Periodic tests
+jobs:
+  perf_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Building backend service
+        run: |
+          docker compose \
+          -f compose.yml \
+          -f compose.testing.yml \
+          build backend
+
+      - name: Run performance tests
+        run: |
+          docker compose \
+            -f compose.yml \
+            -f compose.testing.yml \
+            up --abort-on-container-exit --exit-code-from backend-test
+
+  e2e_tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MYSQL_VERSION: 8.0
+      DATABASE_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
+      DATABASE_ADMIN_PASSWORD: ${{ secrets.DATABASE_ADMIN_PASSWORD }}
+      PROJECT_NAME: cicd_project
+      PORT_BACK: 3000
+      PORT_FRONT: 4200
+      PORT_PMA: 8080
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build & start full stack for E2E (sans e2e-tests)
+        run: |
+          docker compose \
+            -f compose.yml \
+            -f compose.testing.yml \
+            up -d --build --wait mysql backend frontend
+
+      - name: Dump backend logs on failure
+        if: failure()
+        run: |
+          echo "=== BACKEND LOGS ==="
+          docker compose -f compose.yml -f compose.testing.yml logs backend
+
+      - name: Run E2E spec (dans un conteneur frais)
+        run: |
+          docker compose \
+            -f compose.yml \
+            -f compose.testing.yml \
+            run --rm e2e-tests
