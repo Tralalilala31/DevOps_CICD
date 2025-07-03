@@ -11,6 +11,19 @@ test("Vérification complète de la gestion des membres", async ({ page }) => {
       .locator('xpath=//input[@placeholder="Enter your name"]')
       .fill("NomTest");
     await page.locator('xpath=//button[text()="Save"]').click();
+
+    // 🛡️ Attendre que le modal ne soit plus visible ni interactif
+    await expect(modal).toBeHidden({ timeout: 10000 });
+
+    // 🔁 En bonus : attendre que le DOM n'ait plus .show (Bootstrap)
+    await page.waitForFunction(
+      () => {
+        const el = document.querySelector("#userNameModal");
+        return !el || !el.classList.contains("show");
+      },
+      null,
+      { timeout: 10000 }
+    );
   }
 
   // Tu peux ensuite continuer avec tes tests, exemple :
