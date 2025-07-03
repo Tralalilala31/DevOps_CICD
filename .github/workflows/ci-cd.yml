@@ -12,14 +12,14 @@ env:
   PROJECT_NAME: cicd_project
 
 jobs:
-  test_webhook:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Test webhook
-        run: |
-          curl -v -X POST ${{ secrets.WEBHOOK_URL }} \
-            -H "Content-Type: application/json" \
-            -d '{"status":"test","message":"🚀 Webhook de test"}'
+  #test_webhook:
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #    - name: Test webhook
+  #      run: |
+  #        curl -v -X POST ${{ secrets.WEBHOOK_URL }} \
+  #          -H "Content-Type: application/json" \
+  #          -d '{"status":"test","message":"🚀 Webhook de test"}'
 
   # build:
   #   runs-on: ubuntu-latest
@@ -82,7 +82,7 @@ jobs:
           docker compose \
           -f compose.yml \
           -f compose.testing.yml \
-          up --build -d --wait e2e-tests
+          up --build -d --wait mysql backend frontend e2e-tests
 
           docker compose --profile testing
 
@@ -91,7 +91,7 @@ jobs:
           docker compose \
           -f compose.yml \
           -f compose.testing.yml \
-          exec e2e-tests node tests/perf/perf-test.js
+          exec e2e-tests node tests/home.spec.js
 
   check_secrets:
     runs-on: ubuntu-latest
@@ -246,11 +246,6 @@ jobs:
             -f compose.prod.yml \
             ps
           EOF
-
-      - name: Notify deployment success
-        run: |
-          echo "🎉 Production deployed successfully!"
-          echo "Version: ${{ github.ref_name }}"
 
   notify_webhook_success:
     if: success()
