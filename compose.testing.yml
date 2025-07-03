@@ -3,6 +3,7 @@ services:
   backend:
     build:
       target: prod
+      context: ./back-end
 
   backend-test:
     image: node:20-alpine
