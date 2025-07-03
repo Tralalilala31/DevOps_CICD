@@ -9,8 +9,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint **/*.ts",
-    "lint:fix": "eslint **/*.ts --fix",
-    "perf:test": "node tests/perf/perf-test.js"
+    "lint:fix": "eslint **/*.ts --fix"
   },
   "repository": {
     "type": "git",
