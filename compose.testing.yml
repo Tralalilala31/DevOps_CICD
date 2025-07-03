@@ -22,10 +22,13 @@ services:
     depends_on:
       frontend:
         condition: service_healthy
+    profiles:
+      - testing
     command: >
       bash -c "npx playwright install --with-deps &&
                npm install &&
                npm run test:e2e"
+
 volumes:
   mysql-data:
     name: "${PROJECT_NAME}-testing-db"
