@@ -1,6 +1,7 @@
 services:
   backend:
     build:
+      context: ./back-end
       target: build
 
   e2e-tests:
