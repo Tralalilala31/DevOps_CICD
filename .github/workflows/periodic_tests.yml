@@ -1,6 +1,6 @@
 on:
   schedule:
-    - cron: "30 13 * * *" # TEMPORAIRE, remettre à * 20 * * * après les tests
+    - cron: "15 14 * * *" # TEMPORAIRE, remettre à * 20 * * * après les tests
 
 name: Periodic tests
 jobs:
