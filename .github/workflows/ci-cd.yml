@@ -303,6 +303,7 @@ jobs:
   notify_webhook_failure:
     if: failure()
     runs-on: ubuntu-latest
+    needs: deploy_production
     steps:
       - name: Notify failure
         run: |
@@ -312,5 +313,6 @@ jobs:
               "status": "failure", 
               "message": "❌ Échec du pipeline CI/CD",
               "project": "${{ env.PROJECT_NAME }}",
-              "branch": "${{ github.ref_name }}"
+              "version": "${{ github.ref_name }}",
+              "environment": "production"
             }'
