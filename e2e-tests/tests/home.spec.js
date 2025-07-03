@@ -4,14 +4,13 @@ test("Vérification complète de la gestion des membres", async ({ page }) => {
   await page.goto("http://frontend:4200/todos");
   await page.waitForTimeout(500); // ou même 1000ms pour CI
 
-  // 🔍 Étape 1 : gérer le modal si présent
   const modal = page.locator("#userNameModal");
-  if (await modal.isVisible()) {
-    await page.getByPlaceholder("Enter your name").fill("NomTest");
-    await page.getByRole("button", { name: /save/i }).click();
 
-    // ✅ Attendre que le modal disparaisse complètement
-    await modal.waitFor({ state: "hidden", timeout: 5000 });
+  if (await modal.isVisible()) {
+    await page
+      .locator('xpath=//input[@placeholder="Enter your name"]')
+      .fill("NomTest");
+    await page.locator('xpath=//button[text()="Save"]').click();
   }
 
   await page.waitForTimeout(500); // ou même 1000ms pour CI
