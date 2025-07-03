@@ -85,29 +85,58 @@ test("Vérification complète de la gestion des membres", async ({ page }) => {
   await page.getByRole("button", { name: /ajouter un membre/i }).click();
   await expect(page).toHaveURL(/.*members\/add/);
 
+  // 🛡️ Attendre que le formulaire soit complètement chargé
+  await expect(page.locator('[formcontrolname="nom"]')).toBeVisible();
+
   await page.locator('[formcontrolname="nom"]').fill("NomAutoTest");
   await page.locator('[formcontrolname="prenom"]').fill("PrénomAuto");
   await page.locator('[formcontrolname="email"]').fill("auto@test.com");
+
+  // 🛡️ Attendre que le formulaire soit valide avant de soumettre
+  await page.waitForTimeout(500);
   await page.locator('button[type="submit"]').click();
 
-  await expect(page).toHaveURL(/.*members/);
-  await page.waitForTimeout(1000); // Attendre le rechargement
-  await expect(page.locator("table")).toContainText("NomAutoTest");
+  // 🛡️ Attendre la redirection et le rechargement complet
+  await expect(page).toHaveURL(/.*members/, { timeout: 10000 });
+  await page.waitForTimeout(2000); // Attendre le rechargement complet
+
+  // 🛡️ Vérifier que le tableau existe avant de chercher le contenu
+  await expect(page.locator("table")).toBeVisible({ timeout: 10000 });
+
+  // 🛡️ Attendre spécifiquement que le nouveau membre apparaisse
+  await expect(page.locator("table")).toContainText("NomAutoTest", {
+    timeout: 10000,
+  });
 
   // ✏️ Modifier un membre
   await page.locator('tr:has-text("NomAutoTest") >> text=Modifier').click();
-  await expect(page).toHaveURL(/.*members\/edit/);
+  await expect(page).toHaveURL(/.*members\/edit/, { timeout: 10000 });
 
+  // 🛡️ Attendre que le formulaire soit chargé avec les données
+  await expect(page.locator('[formcontrolname="nom"]')).toBeVisible();
+  await page.waitForTimeout(500);
+
+  await page.locator('[formcontrolname="nom"]').clear();
   await page.locator('[formcontrolname="nom"]').fill("NomModif");
   await page.waitForTimeout(500);
   await page.locator('button[type="submit"]').click();
 
-  await expect(page).toHaveURL(/.*members/);
-  await page.waitForTimeout(1000); // Attendre le rechargement
-  await expect(page.locator("table")).toContainText("NomModif");
+  // 🛡️ Attendre la redirection et le rechargement
+  await expect(page).toHaveURL(/.*members/, { timeout: 10000 });
+  await page.waitForTimeout(2000); // Attendre le rechargement complet
+
+  // 🛡️ Vérifier que le tableau existe et contient la modification
+  await expect(page.locator("table")).toBeVisible({ timeout: 10000 });
+  await expect(page.locator("table")).toContainText("NomModif", {
+    timeout: 10000,
+  });
 
   // ❌ Supprimer un membre
   await page.locator('tr:has-text("NomModif") >> text=Supprimer').click();
 
-  await expect(page.locator("table")).not.toContainText("NomModif");
+  // 🛡️ Attendre que la suppression soit effective
+  await page.waitForTimeout(1000);
+  await expect(page.locator("table")).not.toContainText("NomModif", {
+    timeout: 10000,
+  });
 });
