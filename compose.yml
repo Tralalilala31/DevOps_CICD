@@ -50,11 +50,11 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
+          "CMD-SHELL",
           "mysqladmin",
           "ping",
           "-h",
-          "localhost",
+          "127.0.0.1",
           "-u",
           "root",
           "-p${DATABASE_ROOT_PASSWORD}",
