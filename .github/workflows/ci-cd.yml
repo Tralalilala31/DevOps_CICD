@@ -86,7 +86,7 @@ jobs:
         run: docker compose up --build -d
 
       - name: Run E2E tests
-        run: docker compose exec e2e-tests node tests/home.spec.js
+        run: docker compose --profile testing exec e2e-tests node tests/home.spec.js
 
   check_secrets:
     runs-on: ubuntu-latest

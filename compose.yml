@@ -82,6 +82,8 @@ services:
     depends_on:
       frontend:
         condition: service_healthy
+    profiles:
+      - testing
     command: >
       bash -c "npx playwright install --with-deps &&
                npx playwright test"
