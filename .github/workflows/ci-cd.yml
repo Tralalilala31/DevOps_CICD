@@ -282,7 +282,7 @@ jobs:
 
   notify_webhook_success:
     if: success()
-    needs: [deploy_staging, deploy_production]
+    needs: deploy_production
     runs-on: ubuntu-latest
     steps:
       - name: Notify success
