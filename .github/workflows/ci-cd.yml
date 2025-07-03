@@ -141,7 +141,7 @@ jobs:
           sed -i "s/^DATABASE_ADMIN_PASSWORD=.*/DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}/" .env
           sed -i 's/^PORT_FRONT=.*/PORT_FRONT=82/' .env
           sed -i 's/^PORT_BACK=.*/PORT_BACK=3002/' .env
-          sed -i 's/^PORT_PHPMYADMIN=.*/PORT_PHPMYADMIN=8082/' .env
+          sed -i 's/^PORT_PMA=.*/PORT_PMA=8082/' .env
           echo "🔧 Environment file updated for staging"
 
       - name: Deploy files to staging server
@@ -192,7 +192,7 @@ jobs:
           sed -i "s/^DATABASE_ADMIN_PASSWORD=.*/DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}/" .env
           sed -i 's/^PORT_FRONT=.*/PORT_FRONT=80/' .env
           sed -i 's/^PORT_BACK=.*/PORT_BACK=3000/' .env
-          sed -i 's/^PORT_PHPMYADMIN=.*/PORT_PHPMYADMIN=8080/' .env
+          sed -i 's/^PORT_PMA=.*/PORT_PMA=8080/' .env
           echo "🔧 Environment file updated for production"
 
       - name: Deploy files to production server
