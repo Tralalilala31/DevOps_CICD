@@ -84,33 +84,20 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Build & start full stack for E2E
-        id: build-and-start
+      - name: Build & start full stack for E2E (sans e2e-tests)
         run: |
           docker compose \
             -f compose.yml \
             -f compose.testing.yml \
-            --profile testing \
-            up -d --build --wait mysql backend frontend e2e-tests
+            up -d --build --wait mysql backend frontend
 
-      # ← NOUVEAU : afficher les logs backend si le conteneur est déjà hors service
       - name: Dump backend logs on failure
-        if: failure() || steps.build-and-start.outcome == 'failure'
+        if: failure()
         run: |
           echo "=== BACKEND LOGS ==="
-          docker compose \
-            -f compose.yml \
-            -f compose.testing.yml \
-            logs backend
+          docker compose -f compose.yml -f compose.testing.yml logs backend
 
-      - name: Install E2E deps
-        run: |
-          docker compose \
-            -f compose.yml \
-            -f compose.testing.yml \
-            exec e2e-tests bash -lc "npm install && npx playwright install --with-deps"
-
-      - name: Run E2E spec
+      - name: Run E2E spec (dans un conteneur frais)
         run: |
           docker compose \
             -f compose.yml \
