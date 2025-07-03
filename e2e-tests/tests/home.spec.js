@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test("Vérification complète de la gestion des membres", async ({ page }) => {
-  await page.goto("http://localhost/todos");
+  await page.goto("http://frontend:4200/todos");
   await page.waitForTimeout(500); // ou même 1000ms pour CI
 
   // 🔍 Étape 1 : gérer le modal si présent
