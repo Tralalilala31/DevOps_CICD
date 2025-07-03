@@ -71,7 +71,6 @@ jobs:
           up --build --abort-on-container-exit backend-test
 
   e2e_tests:
-    needs: perf_tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
