@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: ["**"]
   schedule:
-    - cron: "0 12 10 * *"
+    - cron: "0 14 12 * *"
 
 name: CI/CD Pipeline
 
