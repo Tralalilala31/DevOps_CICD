@@ -201,7 +201,7 @@ jobs:
         run: rm -f ~/.ssh/id_rsa
 
   deploy_production:
-    needs: deploy_staging
+    needs: [backend_tests, check_secrets] #, build]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
