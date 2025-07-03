@@ -74,10 +74,14 @@ test("Vérification complète de la gestion des membres", async ({ page }) => {
   await page.waitForTimeout(1000); // Attendre le chargement complet
 
   // 🧼 Supprimer le membre test s'il existe déjà
-  const existingRow = page.locator("tr", { hasText: /NomAutoTest|NomModif/ });
+  const existingRow = page.locator("table.custom-dark-table tr", {
+    hasText: /NomAutoTest|NomModif/,
+  });
   if ((await existingRow.count()) > 0) {
     await existingRow.getByRole("button", { name: /supprimer/i }).click();
-    await expect(page.locator("table")).not.toContainText("NomAutoTest");
+    await expect(page.locator("table.custom-dark-table")).not.toContainText(
+      "NomAutoTest"
+    );
     await page.waitForTimeout(500);
   }
 
@@ -101,15 +105,22 @@ test("Vérification complète de la gestion des membres", async ({ page }) => {
   await page.waitForTimeout(2000); // Attendre le rechargement complet
 
   // 🛡️ Vérifier que le tableau existe avant de chercher le contenu
-  await expect(page.locator("table")).toBeVisible({ timeout: 10000 });
-
-  // 🛡️ Attendre spécifiquement que le nouveau membre apparaisse
-  await expect(page.locator("table")).toContainText("NomAutoTest", {
+  await expect(page.locator("table.custom-dark-table")).toBeVisible({
     timeout: 10000,
   });
 
+  // 🛡️ Attendre spécifiquement que le nouveau membre apparaisse
+  await expect(page.locator("table.custom-dark-table")).toContainText(
+    "NomAutoTest",
+    { timeout: 10000 }
+  );
+
   // ✏️ Modifier un membre
-  await page.locator('tr:has-text("NomAutoTest") >> text=Modifier').click();
+  await page
+    .locator(
+      'table.custom-dark-table tr:has-text("NomAutoTest") >> text=Modifier'
+    )
+    .click();
   await expect(page).toHaveURL(/.*members\/edit/, { timeout: 10000 });
 
   // 🛡️ Attendre que le formulaire soit chargé avec les données
@@ -126,17 +137,25 @@ test("Vérification complète de la gestion des membres", async ({ page }) => {
   await page.waitForTimeout(2000); // Attendre le rechargement complet
 
   // 🛡️ Vérifier que le tableau existe et contient la modification
-  await expect(page.locator("table")).toBeVisible({ timeout: 10000 });
-  await expect(page.locator("table")).toContainText("NomModif", {
+  await expect(page.locator("table.custom-dark-table")).toBeVisible({
     timeout: 10000,
   });
+  await expect(page.locator("table.custom-dark-table")).toContainText(
+    "NomModif",
+    { timeout: 10000 }
+  );
 
   // ❌ Supprimer un membre
-  await page.locator('tr:has-text("NomModif") >> text=Supprimer').click();
+  await page
+    .locator(
+      'table.custom-dark-table tr:has-text("NomModif") >> text=Supprimer'
+    )
+    .click();
 
   // 🛡️ Attendre que la suppression soit effective
   await page.waitForTimeout(1000);
-  await expect(page.locator("table")).not.toContainText("NomModif", {
-    timeout: 10000,
-  });
+  await expect(page.locator("table.custom-dark-table")).not.toContainText(
+    "NomModif",
+    { timeout: 10000 }
+  );
 });
