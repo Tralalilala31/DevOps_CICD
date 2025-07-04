@@ -1,7 +1,7 @@
-name: Periodic tests
+name: Scheduled tests
 on:
   schedule:
-    - cron: "45 14 * * *" # TEMPORAIRE, remettre à 0 20 * * *
+    - cron: "0 20 * * *"
 
 jobs:
   perf_tests:
