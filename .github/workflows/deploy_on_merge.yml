@@ -1,3 +1,4 @@
+name: Deploy on merge
 on:
   push:
     branches:
