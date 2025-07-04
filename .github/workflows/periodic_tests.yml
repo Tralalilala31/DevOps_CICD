@@ -1,8 +1,7 @@
 name: Periodic tests
 on:
   schedule:
-    - cron: "15 14 * * *" # TEMPORAIRE, remettre à * 20 * * * après les tests
-  workflow_dispatch:
+    - cron: "45 14 * * *" # TEMPORAIRE, remettre à 0 20 * * *
 
 jobs:
   perf_tests:
