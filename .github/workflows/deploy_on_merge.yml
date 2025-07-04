@@ -64,7 +64,7 @@ jobs:
           echo "✅ All secrets are valid!"
 
   deploy_staging:
-    needs: [backend_tests, check_secrets]
+    needs: [test_webhook, backend_tests, check_secrets]
     # if: github.ref == 'refs/heads/develop' # TEMPORAIRE, décommenter
     if: vars.DEPLOY_BLOCKED != 'true'
     runs-on: ubuntu-latest
