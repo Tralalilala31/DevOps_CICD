@@ -1,7 +1,7 @@
 name: Periodic tests
 on:
   schedule:
-    - cron: "* 20 * * *"
+    - cron: "30 13 * * *" # TEMPORAIRE, remettre à 0 20 * * *
 
 jobs:
   dummy:
