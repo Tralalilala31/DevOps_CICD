@@ -5,6 +5,7 @@ on:
       - main
       - develop
       - feature/cicd # TEMPORAIRE, supprimer
+  workflow_dispatch:
 
 jobs:
   dummy:
