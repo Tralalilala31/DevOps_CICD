@@ -2,6 +2,7 @@ name: Scheduled tests
 on:
   schedule:
     - cron: "0 20 * * *"
+  workflow_dispatch:
 
 jobs:
   perf_tests:
