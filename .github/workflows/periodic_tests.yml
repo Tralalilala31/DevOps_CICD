@@ -55,7 +55,7 @@ jobs:
 
   block_deployments:
     needs: e2e_tests
-    if: failure()
+    if: failure() && vars.DEPLOY_BLOCKED == 'false'
     runs-on: ubuntu-latest
     steps:
       - name: Block deployments on E2E failure
