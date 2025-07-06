@@ -63,7 +63,7 @@ jobs:
       - name: Block deployments on E2E failure
         run: |
           echo "❌ Tests e2e échoués - Blocage des déploiements"
-          curl -L \
+          curl -L --fail-with-body \
             -X PATCH \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
@@ -74,7 +74,7 @@ jobs:
       - name: Notify about deployment block
         run: |
           echo "Envoi d'une notification d'alerte"
-          curl -X POST ${{ secrets.WEBHOOK_URL }} \
+          curl  -X POST ${{ secrets.WEBHOOK_URL }} \
             -H "Content-Type: application/json" \
             -d '{
               "status": "blocked", 
@@ -92,7 +92,7 @@ jobs:
       - name: Unblock deployments on E2E success
         run: |
           echo "✅ Tests e2e réussis - Déblocage des déploiements"
-          curl -L \
+          curl -L --fail-with-body \
             -X PATCH \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
