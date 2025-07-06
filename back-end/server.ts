@@ -37,7 +37,9 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // Middleware de logging pour le développement
 if (NODE_ENV === "development") {
   app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    if (req.path !== "/health") {
+      console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    }
     next();
   });
 }
