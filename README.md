@@ -2,90 +2,101 @@
 
 ## Cadre pédagogique
 
-Ce projet a été réalisé dans le cadre du cours **Intégration Déploiement** à **Ynov Toulouse**, au sein de la promotion **MAST1 DEVLMIOT**, sous la supervision de **Monsieur ALLAINMAT**.
+Ce projet a été réalisé dans le cadre du cours **Intégration Déploiement** à **Ynov Campus Toulouse**, au sein de la promotion **MAST1 DEVLMIOT**, sous la supervision de **Monsieur ALLAINMAT**.
 
-L'objectif pédagogique est de maîtriser les processus CI/CD, la containerisation Docker, et l'automatisation des tests et déploiements sur serveur distant via GitHub Actions.
+L'objectif pédagogique est de maîtriser les processus CI/CD, la contenerisation Docker, et l'automatisation des tests et déploiements sur serveur distant via GitHub Actions.
 
 ## Objectif du projet
 
 Le projet consiste à étendre une application Angular existante pour y intégrer une gestion complète des membres (ajout, édition, suppression) via un backend Node.js et une base MySQL, avec les objectifs suivants :
 
-- Mise en place d'une architecture microservices en containers
-- Gestion de la base de données via Sequelize
-- Création d'un pipeline CI/CD automatisé avec GitHub Actions
-- Dockerisation complète de la stack (frontend, backend, BDD)
-- Déploiement sur un VPS distant avec vérification des services via healthcheck
-- Notification via webhook en cas de succès ou d'échec
+- Mise en place d'une architecture microservices en conteneurs.
+- Gestion de la base de données via `Sequelize`.
+- Création d'un pipeline CI/CD automatisé avec `GitHub Actions`.
+- Conteneurisation complète de la stack via Docker (frontend, backend, BDD) avec vérification des services via `Healthchecks`.
+- Déploiement sur un VPS distant.
+- Notification via webhook en cas de succès ou d'échec.
 
 ## Architecture du projet
 
 ```
 project-root/
 │
+├── .github/workflows/ci-cd.yml # Workflows CI/CD Github Actions
 ├── front-end/                  # Application Angular (todo + gestion membres)
 ├── back-end/                   # API Node.js/Express (CRUD utilisateurs)
-├── docker-compose.yml
-├── docker-compose.override.yml
-├── docker-compose.prod.yml
-├── .github/workflows/ci-cd.yml
-└── .env.template               # Modèle de variables d'environnement
+├── compose.yml                 # Configuration Docker Compose principale
+├── compose.override.yml        # Configuration additionnelle pour le développement local
+├── compose.prod.yml            # Configuration additionnelle pour la production
+├── compose.staging.yml         # Configuration additionnelle pour le staging (pré-production)
+├── compose.testing.yml         # Configuration additionnelle pour le testing
+└── .env.                       # Variables d'environnement
 ```
 
 ## Technologies utilisées
 
-| Côté | Stack |
-|------|-------|
-| **Frontend** | Angular 19, TypeScript |
-| **Backend** | Node.js, Express, Sequelize, TypeScript |
-| **Base de données** | MySQL (via Docker) |
-| **CI/CD** | GitHub Actions |
-| **Conteneurisation** | Docker, Docker Compose |
-| **Monitoring** | Healthcheck HTTP + Webhook |
-| **Sécurité** | GitHub Secrets, gestion des ports, backup auto |
+| Côté                 | Stack                                           |
+| -------------------- | ----------------------------------------------- |
+| **Frontend**         | Angular, TypeScript                             |
+| **Backend**          | Node.js, TypeScript, Express, Sequelize         |
+| **Base de données**  | MySQL avec PHPMyAdmin                           |
+| **CI/CD**            | GitHub Actions                                  |
+| **Conteneurisation** | Docker (compose)                                |
+| **Monitoring**       | Healthcheck Docker + Webhook                    |
+| **Sécurité**         | GitHub Secrets, gestion des ports, back-up auto |
 
 ## Équipe projet
 
-| Nom | Rôle principal | Contributions clés |
-|-----|----------------|-------------------|
+| Nom            | Rôle principal               | Contributions clés                                        |
+| -------------- | ---------------------------- | --------------------------------------------------------- |
 | **Anas DAOUI** | Développeur Frontend Angular | Gestion des membres, routing, formulaires réactifs, cards |
-| **Minh** | Git & CI/CD | Création des workflows GitHub Actions, structure Git |
-| **Clément** | Base de données | Modélisation Sequelize, migrations, liaison BDD |
-| **Émile** | Sécurité | GitHub Secrets, scan images, verrouillage des ports |
-| **Nathan** | Développeur Backend Node.js | API REST, tests unitaires, gestion des routes, cards API |
-| **Nicolas** | Conteneurisation (Docker) | Dockerfiles, Docker Compose, orchestration réseau |
+| **Minh**       | Git & CI/CD                  | Création des workflows GitHub Actions, structure Git      |
+| **Clément**    | Base de données              | Modélisation Sequelize, migrations, liaison BDD           |
+| **Émile**      | Sécurité                     | GitHub Secrets, scan images, verrouillage des ports       |
+| **Nathan**     | Développeur Backend Node.js  | API REST, tests unitaires, gestion des routes, cards API  |
+| **Nicolas**    | Conteneurisation (Docker)    | Dockerfiles, Docker Compose, orchestration réseau         |
 
 > Tous les membres ont collaboré de manière transversale sur la validation des tests, l'intégration des environnements et les déploiements.
 
 ## Déploiement
 
-Les environnements sont déployés automatiquement sur un VPS via SSH :
+Les environnements sont déployés automatiquement sur un VPS via SSH. Adresse IP : <http://212.83.130.245> (ou <http://cicd.nicolas-delahaie.fr>)
 
-- **Staging** : http://212.83.130.245:81
-- **Production** : http://212.83.130.245:80
+### Modifier les ports à exposer
 
-### Attribution des ports
+Les ports par défaut, pour le développement local (plug and play) sont :
 
-| Environnement | Frontend | Backend | PhpMyAdmin |
-|---------------|----------|---------|------------|
-| **Staging** | :81 | :3001 | :8081 |
-| **Production** | :80 | :3000 | :8080 |
+| Environnement     | Frontend | Backend | PhpMyAdmin |
+| ----------------- | -------- | ------- | ---------- |
+| **Développement** | 82.      | 3002.   | 8082       |
 
-### Production : Préparation et lancement
+Avant le déploiement, il est recommandé de modifier les ports à utiliser en fonction de l'environnement (dans le .env). Voici les valeurs recommandées, utilisées par le pipeline CI/CD :
 
-#### 1. Nettoyage des fichiers générés
+| Environnement  | Frontend | Backend | PhpMyAdmin |
+| -------------- | -------- | ------- | ---------- |
+| **Production** | 80       | 3000    | 8080       |
+| **Staging**    | 81       | 3001    | 8081       |
+
+> Par exemple pour accéder au fontend en staging : <http://cicd.nicolas-delahaie.fr:81>
+
+### Nettoyage des fichiers générés
+
 ```bash
 git clean -ixd
 ```
+
 > Supprime les fichiers non versionnés (par exemple : `var/`, `jwt/`) pour éviter qu'ils contaminent l'image de production.
 
-#### 2. Configuration des variables d'environnement
+### Configuration des variables d'environnement
+
 Avant tout déploiement en production, modifier les identifiants de la base de données et autres variables sensibles dans le fichier `.env`.
 
-#### 3. Lancement
+### Lancement
+
 ```bash
 docker compose \
--f docker-compose.yml \
--f docker-compose.prod.yml \
+-f compose.yml \
+-f compose.<ENVIRONNEMENT_SOUHAITE>.yml \
 up \
 -d \
 --build
@@ -93,29 +104,32 @@ up \
 
 ## CI/CD Pipeline (GitHub Actions)
 
-Le pipeline `ci-cd.yml` (voir `.github/workflows/`) gère les étapes suivantes :
+Le projet utilise **deux pipelines automatisés** (voir `.github/workflows/`) :
 
-1. **test_webhook** : test de connectivité webhook
-2. **backend_tests** : build et tests unitaires backend
-3. **perf_tests** : tests de performance automatisés
-4. **e2e_tests** : tests end-to-end (planifiés chaque soir à 22h)
-5. **deploy_staging** : déploiement sur environnement de test
-6. **deploy_production** : déploiement final
-7. **notify_webhook_*** : notification webhook (succès ou échec)
+### 1. Pipeline de déploiement
+
+Déclenché automatiquement lors des merges sur les branches principales :
+
+- **Validation** : tests unitaires, vérification des secrets, connectivité
+- **Déploiement staging** : environnement de pré-production pour validation
+- **Déploiement production** : mise en ligne finale après validation
+- **Notifications** : webhook de succès ou d'échec
+
+### 2. Pipeline de tests périodiques
+
+Exécuté automatiquement **chaque soir à 22h** :
+
+- **Tests end-to-end** : validation complète des fonctionnalités
+- **Tests de performance** : vérification des temps de réponse
+- **Contrôle qualité** : surveillance continue de l'application
 
 ### Déclencheurs
 
-```yaml
-on:
-  push:
-    branches: ["**"]
-  pull_request:
-    branches: ["**"]
-  schedule:
-    - cron: "0 22 * * *"
-```
+- **Push/Pull Request** : validation et déploiement automatique
+- **Planification** : tests nocturnes de surveillance (22h)
+- **Manuel** : possibilité de lancer les workflows à la demande
 
-> Un aperçu graphique du pipeline est disponible dans l'onglet "Actions" du dépôt.
+> Les pipelines intègrent des mécanismes de blocage automatique en cas d'échec des tests critiques.
 
 ## Développement local
 
@@ -125,23 +139,7 @@ on:
 docker compose up -d --build
 ```
 
-> Le fichier `docker-compose.override.yml` est automatiquement pris en compte pour la configuration locale.
-
-### Développement classique
-
-**Backend :**
-```bash
-cd back-end
-npm install
-npm run dev
-```
-
-**Frontend :**
-```bash
-cd front-end
-npm install
-ng serve
-```
+> Le fichier `compose.override.yml` est automatiquement pris en compte pour la configuration locale.
 
 > Possibilité de développement dans conteneur Docker directement via VSCode en utilisant l'extension "Remote Development" > "Attach to Running Container...".
 
@@ -157,22 +155,7 @@ ng serve
 - **Webhook** : https://webhook.site/ffed736a-8eec-4ddb-818d-c1ae3e2c8648
 - **Healthcheck** : `/health` sur chaque API
 - **Notifications webhook** : succès/échec de chaque étape critique
-- **Fermeture de ports non utilisés** via `fuser` et `ss`
-- **Backups MySQL** réalisés avec `mysqldump`
+- **Backups MySQL** réalisés par le biais de dumps
 - **Secrets et configuration sécurisée** via GitHub Secrets
-
-## Notes supplémentaires
-
-- Attribution dynamique des ports lors du déploiement
-- Redémarrage automatique en cas d'échec (jusqu'à 3 tentatives)
-- Backup automatique de la base de données avant chaque mise en production
-
-## Liens utiles
-
-- **Dépôt GitHub** : [DevOps_CICD](https://github.com/username/DevOps_CICD)
-- **Environnement Staging** : http://212.83.130.245:81
-- **Environnement Production** : http://212.83.130.245:80
-
----
 
 > **Avertissement** : Projet réalisé dans un cadre pédagogique. Ne pas utiliser en production sans audit de sécurité préalable.
