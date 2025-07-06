@@ -7,6 +7,9 @@ on:
       - feature/cicd # TEMPORAIRE, supprimer
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   test_webhook:
     # if: github.ref == 'refs/heads/main' # TEMPORAIRE, décommenter
@@ -66,7 +69,6 @@ jobs:
   deploy_staging:
     needs: [test_webhook, backend_tests, check_secrets]
     # if: github.ref == 'refs/heads/develop' # TEMPORAIRE, décommenter
-    if: vars.DEPLOY_BLOCKED != 'true'
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -124,7 +126,6 @@ jobs:
   deploy_production:
     needs: [test_webhook, backend_tests, check_secrets]
     #if: github.ref == 'refs/heads/main' # TEMPORAIRE, décommenter
-    if: vars.DEPLOY_BLOCKED != 'true'
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -132,6 +133,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Check if deployments are locked
+        uses: github/lock@v2.3.1
+        with:
+          mode: "check"
 
       - name: Setup SSH Key
         run: |
@@ -203,7 +209,7 @@ jobs:
         run: rm -f ~/.ssh/id_rsa
 
   notify_webhook_success:
-    if: success() && vars.DEPLOY_BLOCKED != 'true'
+    if: success()
     needs: deploy_production
     runs-on: ubuntu-latest
     steps:
@@ -222,7 +228,7 @@ jobs:
             echo "✅ Notification sent successfully"
 
   notify_webhook_failure:
-    if: failure() && vars.DEPLOY_BLOCKED != 'true'
+    if: failure()
     runs-on: ubuntu-latest
     needs: deploy_production
     steps:
