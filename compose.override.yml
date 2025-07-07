@@ -16,7 +16,7 @@ services:
     working_dir: /app
     volumes:
       - ./front-end:/app
-      - /app/node_modules
+      # - /app/node_modules # TEMPORAIRE. Solution non viable sur windows car WSL rame trop. Solution à trouver.
       - /app/.angular
       - /app/.vscode
 

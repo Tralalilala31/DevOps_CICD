@@ -11,6 +11,8 @@ services:
       DB_USER: admin
       DB_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
       PORT: ${PORT_BACK}
+      PORT_FRONT: ${PORT_FRONT}
+      HOST: ${HOST}
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:3000/health"]
       interval: 10s
@@ -25,7 +27,7 @@ services:
     build:
       context: ./front-end
       args:
-        API_PORT: ${PORT_BACK}
+        API_URL: ${HOST}:${PORT_BACK}
     ports:
       - ${PORT_FRONT}:4200
     healthcheck:
@@ -48,14 +50,15 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: [
-        "CMD-SHELL",
-        "mysqladmin ping -h 127.0.0.1 -u root -p${DATABASE_ROOT_PASSWORD}"
-      ]
-      interval:    10s
-      timeout:      5s
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -u root -p${DATABASE_ROOT_PASSWORD}",
+        ]
+      interval: 10s
+      timeout: 5s
       start_period: 30s
-      retries:     10
+      retries: 10
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:${PHPMYADMIN_VERSION}

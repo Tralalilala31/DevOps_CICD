@@ -17,7 +17,7 @@ mkdir -p $FILE_DIR
 echo "// GENERATED FILE WITH DOCKER - DO NOT EDIT
 export const environment = {
   production: $PROD_VALUE,
-  apiUrl: 'http://localhost:$API_PORT/api',
+  apiUrl: 'http://$API_URL/api',
   weatherApiKey: '$WEATHER_API_KEY'
 };" > $FILE
 

@@ -7,7 +7,7 @@ import { connectDB } from "./config/database";
 
 const app = express();
 const PORT = 3000;
-const { NODE_ENV } = process.env;
+const { NODE_ENV, PORT_FRONT, HOST } = process.env;
 
 // Verification des variables d'environnement
 if (
@@ -19,9 +19,13 @@ if (
   throw new Error("La variable d'environnement NODE_ENV n'est pas définie.");
 }
 
+if (!PORT_FRONT || !HOST) {
+  throw new Error("La variable d'environnement PORT_FRONT n'est pas définie.");
+}
+
 // Configuration CORS
 const corsOptions = {
-  origin: "http://localhost",
+  origin: "http://" + HOST + ":" + PORT_FRONT,
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -37,7 +41,9 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // Middleware de logging pour le développement
 if (NODE_ENV === "development") {
   app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    if (req.path !== "/health") {
+      console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    }
     next();
   });
 }
