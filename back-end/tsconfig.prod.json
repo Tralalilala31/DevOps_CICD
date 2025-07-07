@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "sourceMap": false,
+    "declaration": false,
+    "declarationMap": false,
+    "removeComments": true
+  },
+  "exclude": [
+    "node_modules",
+    "tests/**/*",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "jest.config.js"
+  ]
+}

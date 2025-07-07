@@ -1,0 +1,33 @@
+<div class="container mt-5">
+  <h2 class="text-warning mb-4">Ajouter un membre</h2>
+
+  <form [formGroup]="memberForm" (ngSubmit)="onSubmit()">
+    <div class="mb-3">
+      <label for="nom" class="form-label text-light">Nom</label>
+      <input type="text" class="form-control" id="nom" formControlName="nom" />
+      <div *ngIf="memberForm.get('nom')?.invalid && memberForm.get('nom')?.touched" class="text-danger">
+        Le nom est requis.
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label for="prenom" class="form-label text-light">Prénom</label>
+      <input type="text" class="form-control" id="prenom" formControlName="prenom" />
+      <div *ngIf="memberForm.get('prenom')?.invalid && memberForm.get('prenom')?.touched" class="text-danger">
+        Le prénom est requis.
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label for="email" class="form-label text-light">Email</label>
+      <input type="email" class="form-control" id="email" formControlName="email" />
+      <div *ngIf="memberForm.get('email')?.invalid && memberForm.get('email')?.touched" class="text-danger">
+        Entrez un email valide.
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-warning text-dark fw-bold" [disabled]="memberForm.invalid">
+      Valider
+    </button>
+  </form>
+</div>

@@ -1,0 +1,74 @@
+services:
+  backend:
+    build:
+      context: ./back-end
+    ports:
+      - ${PORT_BACK}:3000
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${PROJECT_NAME}
+      DB_USER: admin
+      DB_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
+      PORT: ${PORT_BACK}
+      PORT_FRONT: ${PORT_FRONT}
+      HOST: ${HOST}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./front-end
+      args:
+        API_URL: ${HOST}:${PORT_BACK}
+    ports:
+      - ${PORT_FRONT}:4200
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://0.0.0.0:4200"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:${MYSQL_VERSION}
+    environment:
+      MYSQL_DATABASE: ${PROJECT_NAME}
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: ${DATABASE_ADMIN_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -u root -p${DATABASE_ROOT_PASSWORD}",
+        ]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:${PHPMYADMIN_VERSION}
+    environment:
+      PMA_HOST: mysql
+    ports:
+      - ${PORT_PMA}:80
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql-data:

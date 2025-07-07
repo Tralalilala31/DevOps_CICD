@@ -1,0 +1,35 @@
+name: ${PROJECT_NAME}-testing
+services:
+  backend:
+    build:
+      target: prod
+      context: ./back-end
+
+  backend-test:
+    image: node:20-alpine
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./back-end:/app
+    working_dir: /app
+    command: >
+      sh -c "npm install &&
+            node ./tests/perf/perf-test.js"
+
+  e2e-tests:
+    image: mcr.microsoft.com/playwright:v1.53.2-jammy
+    working_dir: /app
+    volumes:
+      - ./e2e-tests:/app
+    depends_on:
+      frontend:
+        condition: service_healthy
+    command: >
+      bash -c "npm install &&
+               npx playwright install --with-deps &&
+               npm run test:e2e"
+
+volumes:
+  mysql-data:
+    name: "${PROJECT_NAME}-testing-db"

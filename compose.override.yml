@@ -1,0 +1,30 @@
+name: ${PROJECT_NAME}-dev
+services:
+  backend:
+    build:
+      target: dev
+    working_dir: /app
+    volumes:
+      - ./back-end:/app
+      - /app/node_modules
+      - /app/.angular
+      - /app/.vscode
+
+  frontend:
+    build:
+      target: dev
+    working_dir: /app
+    volumes:
+      - ./front-end:/app
+      # - /app/node_modules # TEMPORAIRE. Solution non viable sur windows car WSL rame trop. Solution à trouver.
+      - /app/.angular
+      - /app/.vscode
+
+  phpmyadmin:
+    environment:
+      PMA_USER: root
+      PMA_PASSWORD: ${DATABASE_ROOT_PASSWORD}
+
+volumes:
+  mysql-data:
+    name: "${PROJECT_NAME}-dev-db"

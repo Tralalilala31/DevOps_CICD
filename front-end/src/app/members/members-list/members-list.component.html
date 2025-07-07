@@ -1,0 +1,42 @@
+<div class="container mt-4">
+  <h2>Liste des membres</h2>
+  <p></p>
+      <button
+      class="btn btn-warning text-dark fw-bold rounded"
+      [routerLink]="['/members/add']"
+    >
+      + Ajouter un membre
+    </button>
+  <table class="custom-dark-table">
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Prénom</th>
+        <th>Email</th>
+        <th class="text-center">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let member of members">
+        <td>{{ member.nom }}</td>
+        <td>{{ member.prenom }}</td>
+        <td>{{ member.email }}</td>
+      <td class="text-center">
+        <button
+          class="btn btn-sm btn-outline-warning me-2"
+          [routerLink]="['/members/edit', member.id]"
+        >
+          Modifier
+        </button>
+        <button
+          class="btn btn-sm btn-outline-danger"
+          (click)="deleteMember(member.id!.toString())"
+
+        >
+          Supprimer
+        </button>
+      </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,92 @@
+name: Scheduled tests
+on:
+  schedule:
+    - cron: "0 20 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+
+jobs:
+  perf_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Building backend service
+        run: |
+          docker compose \
+          -f compose.yml \
+          -f compose.testing.yml \
+          build backend
+
+      - name: Run performance tests
+        run: |
+          docker compose \
+            -f compose.yml \
+            -f compose.testing.yml \
+            up --abort-on-container-exit --exit-code-from backend-test
+
+  e2e_tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MYSQL_VERSION: 8.0
+      DATABASE_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
+      DATABASE_ADMIN_PASSWORD: ${{ secrets.DATABASE_ADMIN_PASSWORD }}
+      PROJECT_NAME: cicd_project
+      PORT_BACK: 3000
+      PORT_FRONT: 4200
+      PORT_PMA: 8080
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build necessary services for E2E tests
+        run: |
+          docker compose \
+            -f compose.yml \
+            -f compose.testing.yml \
+            up -d --build --wait mysql backend frontend
+
+      - name: Run E2E tests
+        id: e2e_test
+        run: |
+          docker compose \
+            -f compose.yml \
+            -f compose.testing.yml \
+            run --rm e2e-tests
+
+  block_deployments:
+    needs: e2e_tests
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Block deployments on E2E failure
+        uses: github/lock@v2.3.1
+        with:
+          mode: "lock"
+          environment: "global"
+          reason: "E2E tests failed - deployments blocked automatically"
+
+      - name: Notify about deployment block
+        run: |
+          echo "Envoi d'une notification d'alerte"
+          curl -X POST ${{ secrets.WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d '{
+              "status": "blocked", 
+              "message": "🚫 Déploiements bloqués - Tests e2e en échec",
+              "project": "${{ env.PROJECT_NAME }}",
+              "version": "${{ github.ref_name }}",
+              "environment": "all"
+            }'
+
+  unblock_deployments:
+    needs: e2e_tests
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Unblock production deployments on E2E success
+        uses: github/lock@v2.3.1
+        with:
+          mode: "unlock"
+          environment: "global"
