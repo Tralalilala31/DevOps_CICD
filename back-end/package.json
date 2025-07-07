@@ -2,6 +2,7 @@
   "name": "devops-cicd",
   "version": "1.0.0",
   "main": "dist/server.js",
+  "description": "Backend API pour l'application DevOps CI/CD",
   "scripts": {
     "test": "jest",
     "test:unit": "jest tests",
@@ -11,17 +12,6 @@
     "lint": "eslint **/*.ts",
     "lint:fix": "eslint **/*.ts --fix"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Miniluchi/DevOps_CICD.git"
-  },
-  "author": "Manys",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Miniluchi/DevOps_CICD/issues"
-  },
-  "homepage": "https://github.com/Miniluchi/DevOps_CICD#readme",
-  "description": "Backend API pour l'application DevOps CI/CD",
   "dependencies": {
     "axios": "^1.10.0",
     "cors": "^2.8.5",
