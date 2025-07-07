@@ -28,6 +28,7 @@ jobs:
   test_webhook:
     needs: ensure_unlocked
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Test webhook
         run: |
@@ -145,7 +146,6 @@ jobs:
 
   deploy_production:
     needs: [test_webhook, backend_tests, check_secrets]
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: production
