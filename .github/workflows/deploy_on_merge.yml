@@ -104,18 +104,18 @@ jobs:
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/cicd/staging/
 
       - name: Start staging containers
-        env:
-          # Configuration staging
-          DATABASE_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
-          DATABASE_ADMIN_PASSWORD: ${{ secrets.DATABASE_ADMIN_PASSWORD }}
-          PORT_FRONT: 81
-          PORT_BACK: 3001
-          PORT_PMA: 8081
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
             set -e
             cd /home/cicd/staging
+
+            # Export des variables d'environnement pour Docker Compose
+            export DATABASE_ROOT_PASSWORD="${{ secrets.DATABASE_ROOT_PASSWORD }}"
+            export DATABASE_ADMIN_PASSWORD="${{ secrets.DATABASE_ADMIN_PASSWORD }}"
+            export PORT_FRONT=81
+            export PORT_BACK=3001
+            export PORT_PMA=8081
 
             echo "🚀 Starting services..."
             docker compose \
@@ -158,46 +158,34 @@ jobs:
             -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/cicd/production/
 
-      - name: Backup existing production
-        env:
-          # Configuration production
-          DATABASE_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
-          DATABASE_ADMIN_PASSWORD: ${{ secrets.DATABASE_ADMIN_PASSWORD }}
-          PORT_FRONT: 80
-          PORT_BACK: 3000
-          PORT_PMA: 8080
+      - name: Execution des commandes en SSH sur le serveur
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
             set -e
 
-            BACKUP_DIR="/home/cicd/backups/$(date +%Y%m%d_%H%M%S)"
-            mkdir -p "$BACKUP_DIR"
+            # Export des variables d'environnement
+            export DATABASE_ROOT_PASSWORD="${{ secrets.DATABASE_ROOT_PASSWORD }}"
+            export DATABASE_ADMIN_PASSWORD="${{ secrets.DATABASE_ADMIN_PASSWORD }}"
+            export PORT_FRONT=80
+            export PORT_BACK=3000
+            export PORT_PMA=8080
+
+            BACKUP_DIR="/home/cicd/backups/\$(date +%Y%m%d_%H%M%S)"
+            mkdir -p "\$BACKUP_DIR"
 
             if [ -d "/home/cicd/production" ]; then
-              cp -r /home/cicd/production "$BACKUP_DIR/"
-              echo "✅ Folder copied: $BACKUP_DIR"
+              cp -r /home/cicd/production "\$BACKUP_DIR/"
+              echo "✅ Folder copied: \$BACKUP_DIR"
             fi
 
             # Database backup if container exists
-            if docker ps --format '{{.Names}}' | grep -q "${PROJECT_NAME}_mysql_prod"; then
-              docker exec ${PROJECT_NAME}_mysql_prod \
-                mysqldump -u root -p${{ secrets.DATABASE_ROOT_PASSWORD }} ${PROJECT_NAME}_prod > "$BACKUP_DIR/db.sql" || true
+            if docker ps --format '{{.Names}}' | grep -q "\${PROJECT_NAME}_mysql_prod"; then
+              docker exec \${PROJECT_NAME}_mysql_prod \
+                mysqldump -u root -p\$DATABASE_ROOT_PASSWORD \${PROJECT_NAME}_prod > "\$BACKUP_DIR/db.sql" || true
             fi
-          EOF
+            echo "✅ Database backup created: \$BACKUP_DIR/db.sql"
 
-      - name: Start production containers
-        env:
-          # Configuration production
-          DATABASE_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
-          DATABASE_ADMIN_PASSWORD: ${{ secrets.DATABASE_ADMIN_PASSWORD }}
-          PORT_FRONT: 80
-          PORT_BACK: 3000
-          PORT_PMA: 8080
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            set -e
             cd /home/cicd/production
 
             echo "🚀 Starting services..."
