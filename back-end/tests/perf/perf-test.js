@@ -65,12 +65,8 @@ const addMembers = async () => {
   const start = Date.now();
 
   for (let i = 0; i < total; i++) {
-    try {
-      await axios.post(baseUrl, generateRandomMember());
-      console.log(`✅ [${i + 1}] Ajouté`);
-    } catch (err) {
-      console.error(`❌ [${i + 1}] Échec :`, err.response?.data || err.message);
-    }
+    await axios.post(baseUrl, generateRandomMember());
+    console.log(`✅ [${i + 1}] Ajouté`);
   }
 
   const end = Date.now();
