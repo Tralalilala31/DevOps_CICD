@@ -22,7 +22,9 @@ jobs:
 
       - name: Fail if locked
         if: steps.lock.outputs.locked == 'true'
-        run: exit 1
+        run: |
+          echo "🚫 Déploiements verrouillés !" 
+          exit 1
 
   test_webhook:
     # if: github.ref == 'refs/heads/main' # TEMPORAIRE, décommenter
