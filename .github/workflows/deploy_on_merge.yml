@@ -84,15 +84,6 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Update environment variables for staging
-        run: |
-          sed -i "s/^DATABASE_ROOT_PASSWORD=.*/DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}/" .env
-          sed -i "s/^DATABASE_ADMIN_PASSWORD=.*/DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}/" .env
-          sed -i 's/^PORT_FRONT=.*/PORT_FRONT=81/' .env
-          sed -i 's/^PORT_BACK=.*/PORT_BACK=3001/' .env
-          sed -i 's/^PORT_PMA=.*/PORT_PMA=8081/' .env
-          echo "🔧 Environment file updated for staging"
-
       - name: Deploy files to staging server
         run: |
           rsync -avz --delete . \
@@ -100,6 +91,13 @@ jobs:
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/cicd/staging/
 
       - name: Start staging containers
+        env:
+          # Configuration staging
+          DATABASE_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
+          DATABASE_ADMIN_PASSWORD: ${{ secrets.DATABASE_ADMIN_PASSWORD }}
+          PORT_FRONT: 81
+          PORT_BACK: 3001
+          PORT_PMA: 8081
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
@@ -138,6 +136,10 @@ jobs:
         uses: github/lock@v2.3.1
         with:
           mode: "check"
+          
+      - name: Fail if locked
+        if: steps.lock.outputs.locked == 'true'
+        run: exit 1
 
       - name: Setup SSH Key
         run: |
@@ -146,15 +148,6 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Update environment variables for production
-        run: |
-          sed -i "s/^DATABASE_ROOT_PASSWORD=.*/DATABASE_ROOT_PASSWORD=${{ secrets.DATABASE_ROOT_PASSWORD }}/" .env
-          sed -i "s/^DATABASE_ADMIN_PASSWORD=.*/DATABASE_ADMIN_PASSWORD=${{ secrets.DATABASE_ADMIN_PASSWORD }}/" .env
-          sed -i 's/^PORT_FRONT=.*/PORT_FRONT=80/' .env
-          sed -i 's/^PORT_BACK=.*/PORT_BACK=3000/' .env
-          sed -i 's/^PORT_PMA=.*/PORT_PMA=8080/' .env
-          echo "🔧 Environment file updated for production"
-
       - name: Deploy files to production server
         run: |
           rsync -avz --delete . \
@@ -162,6 +155,13 @@ jobs:
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/cicd/production/
 
       - name: Backup existing production
+        env:
+          # Configuration production
+          DATABASE_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
+          DATABASE_ADMIN_PASSWORD: ${{ secrets.DATABASE_ADMIN_PASSWORD }}
+          PORT_FRONT: 80
+          PORT_BACK: 3000
+          PORT_PMA: 8080
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
@@ -183,6 +183,13 @@ jobs:
           EOF
 
       - name: Start production containers
+        env:
+          # Configuration production
+          DATABASE_ROOT_PASSWORD: ${{ secrets.DATABASE_ROOT_PASSWORD }}
+          DATABASE_ADMIN_PASSWORD: ${{ secrets.DATABASE_ADMIN_PASSWORD }}
+          PORT_FRONT: 80
+          PORT_BACK: 3000
+          PORT_PMA: 8080
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
