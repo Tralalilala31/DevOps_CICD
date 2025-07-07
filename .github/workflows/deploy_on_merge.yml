@@ -42,6 +42,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with: 
+          fetch-depth: 1
+          ref: ${{ github.ref_name }}
 
       - name: Start development environment
         run: docker compose up -d --build --wait backend
@@ -94,6 +97,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with: 
+          fetch-depth: 1
+          ref: ${{ github.ref_name }}
 
       - name: Setup SSH Key
         run: |
@@ -149,6 +155,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with: 
+          fetch-depth: 1
+          ref: ${{ github.ref_name }}
 
       - name: Setup SSH Key
         run: |
