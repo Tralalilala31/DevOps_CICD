@@ -88,7 +88,7 @@ jobs:
 
   deploy_staging:
     needs: [backend_tests, check_secrets]
-    if: github.ref == 'refs/heads/develop'
+    # if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     environment:
       name: staging
