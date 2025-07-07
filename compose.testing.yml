@@ -26,8 +26,8 @@ services:
       frontend:
         condition: service_healthy
     command: >
-      bash -c "npx playwright install --with-deps &&
-               npm install &&
+      bash -c "npm install &&
+               npx playwright install --with-deps &&
                npm run test:e2e"
 
 volumes:
