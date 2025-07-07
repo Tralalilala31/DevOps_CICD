@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import http from "http";
 
 const PORT = 3000;
-const URL = `http://localhost:${PORT}/api/users`;
+const URL = `http://backend:${PORT}/api/users`;
 
 // Fonction pour mesurer le temps de réponse
 function testPerf(url, method = "GET", body = null) {
