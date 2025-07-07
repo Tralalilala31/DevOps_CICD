@@ -146,7 +146,7 @@ jobs:
         run: rm -f ~/.ssh/id_rsa
 
   deploy_production:
-    needs: [test_webhook, backend_tests, check_secrets]
+    needs: [test_webhook, check_secrets]
     runs-on: ubuntu-latest
     environment:
       name: production

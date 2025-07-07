@@ -30,7 +30,7 @@ project-root/
 ├── compose.prod.yml            # Configuration additionnelle pour la production
 ├── compose.staging.yml         # Configuration additionnelle pour le staging (pré-production)
 ├── compose.testing.yml         # Configuration additionnelle pour le testing
-└── .env.                       # Variables d'environnement
+└── .env                        # Variables d'environnement
 ```
 
 ## Technologies utilisées
@@ -47,14 +47,14 @@ project-root/
 
 ## Équipe projet
 
-| Nom            | Rôle principal               | Contributions clés                                        |
-| -------------- | ---------------------------- | --------------------------------------------------------- |
-| **Anas DAOUI** | Développeur Frontend Angular | Gestion des membres, routing, formulaires réactifs, cards |
-| **Minh**       | Git & CI/CD                  | Création des workflows GitHub Actions, structure Git      |
-| **Clément**    | Base de données              | Modélisation Sequelize, migrations, liaison BDD           |
-| **Émile**      | Sécurité                     | GitHub Secrets, scan images, verrouillage des ports       |
-| **Nathan**     | Développeur Backend Node.js  | API REST, tests unitaires, gestion des routes, cards API  |
-| **Nicolas**    | Conteneurisation (Docker)    | Dockerfiles, Docker Compose, orchestration réseau         |
+| Nom                 | Rôle principal               | Contributions clés                                        |
+| ------------------- | ---------------------------- | --------------------------------------------------------- |
+| **Anas**            | Développeur Frontend Angular | Gestion des membres, routing, formulaires réactifs, cards |
+| **Minh et Nicolas** | Git & CI/CD                  | Création des workflows GitHub Actions, structure Git      |
+| **Clément**         | Base de données              | Modélisation Sequelize, migrations, liaison BDD           |
+| **Émile**           | Sécurité                     | GitHub Secrets, scan images, verrouillage des ports       |
+| **Nathan**          | Développeur Backend Node.js  | API REST, tests unitaires, gestion des routes, cards API  |
+| **Nicolas**         | Conteneurisation (Docker)    | Dockerfiles, Docker Compose, orchestration réseau         |
 
 > Tous les membres ont collaboré de manière transversale sur la validation des tests, l'intégration des environnements et les déploiements.
 
@@ -68,7 +68,7 @@ Les ports par défaut, pour le développement local (plug and play) sont :
 
 | Environnement     | Frontend | Backend | PhpMyAdmin |
 | ----------------- | -------- | ------- | ---------- |
-| **Développement** | 82.      | 3002.   | 8082       |
+| **Développement** | 82       | 3002    | 8082       |
 
 Avant le déploiement, il est recommandé de modifier les ports à utiliser en fonction de l'environnement (dans le .env). Voici les valeurs recommandées, utilisées par le pipeline CI/CD :
 
