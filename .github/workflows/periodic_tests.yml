@@ -40,14 +40,14 @@ jobs:
       PORT_PMA: 8080
     steps:
       - uses: actions/checkout@v3
-      - name: Build & start full stack for E2E (sans e2e-tests)
+      - name: Build necessary services for E2E tests
         run: |
           docker compose \
             -f compose.yml \
             -f compose.testing.yml \
             up -d --build --wait mysql backend frontend
 
-      - name: Run E2E spec (dans un conteneur frais)
+      - name: Run E2E tests
         id: e2e_test
         run: |
           docker compose \

@@ -211,7 +211,7 @@ jobs:
         run: rm -f ~/.ssh/id_rsa
 
   notify_webhook_success:
-    if: success()
+    if: needs.deploy_production.result == 'success'
     needs: deploy_production
     runs-on: ubuntu-latest
     steps:
@@ -230,7 +230,7 @@ jobs:
             echo "✅ Notification sent successfully"
 
   notify_webhook_failure:
-    if: failure()
+    if: needs.deploy_production.result == 'failure'
     runs-on: ubuntu-latest
     needs: deploy_production
     steps:
