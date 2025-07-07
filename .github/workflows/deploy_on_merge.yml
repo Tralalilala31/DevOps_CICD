@@ -4,7 +4,6 @@ on:
     branches:
       - main
       - develop
-      - feature/cicd # TEMPORAIRE, supprimer
   workflow_dispatch:
 
 permissions:
@@ -27,7 +26,6 @@ jobs:
           exit 1
 
   test_webhook:
-    # if: github.ref == 'refs/heads/main' # TEMPORAIRE, décommenter
     needs: ensure_unlocked
     runs-on: ubuntu-latest
     steps:
@@ -42,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with: 
+        with:
           fetch-depth: 1
           ref: ${{ github.ref_name }}
 
@@ -88,8 +86,8 @@ jobs:
           echo "✅ All secrets are valid!"
 
   deploy_staging:
-    needs: [test_webhook, backend_tests, check_secrets]
-    # if: github.ref == 'refs/heads/develop' # TEMPORAIRE, décommenter
+    needs: [backend_tests, check_secrets]
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -97,7 +95,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-        with: 
+        with:
           fetch-depth: 1
           ref: ${{ github.ref_name }}
 
@@ -147,7 +145,7 @@ jobs:
 
   deploy_production:
     needs: [test_webhook, backend_tests, check_secrets]
-    #if: github.ref == 'refs/heads/main' # TEMPORAIRE, décommenter
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -155,7 +153,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-        with: 
+        with:
           fetch-depth: 1
           ref: ${{ github.ref_name }}
 
@@ -228,16 +226,15 @@ jobs:
     steps:
       - name: Notify success
         run: |
-          # TEMPORAIRE pour garder les tokens, décommenter
-          # curl -X POST ${{ secrets.WEBHOOK_URL }} \
-          #   -H "Content-Type: application/json" \
-          #   -d '{
-          #     "status": "success", 
-          #     "message": "✅ Build & deploy completed",
-          #     "project": "${{ env.PROJECT_NAME }}",
-          #     "version": "${{ github.ref_name }}",
-          #     "environment": "production"
-          #   }'
+          curl -X POST ${{ secrets.WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d '{
+              "status": "success", 
+              "message": "✅ Build & deploy completed",
+              "project": "${{ env.PROJECT_NAME }}",
+              "version": "${{ github.ref_name }}",
+              "environment": "production"
+            }'
             echo "✅ Notification sent successfully"
 
   notify_webhook_failure:
@@ -247,14 +244,13 @@ jobs:
     steps:
       - name: Notify failure
         run: |
-          # TEMPORAIRE pour garder les tokens, décommenter
-          # curl -X POST ${{ secrets.WEBHOOK_URL }} \
-          #   -H "Content-Type: application/json" \
-          #   -d '{
-          #     "status": "failure", 
-          #     "message": "❌ Échec du pipeline CI/CD",
-          #     "project": "${{ env.PROJECT_NAME }}",
-          #     "version": "${{ github.ref_name }}",
-          #     "environment": "production"
-          #   }'
+          curl -X POST ${{ secrets.WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d '{
+              "status": "failure", 
+              "message": "❌ Échec du pipeline CI/CD",
+              "project": "${{ env.PROJECT_NAME }}",
+              "version": "${{ github.ref_name }}",
+              "environment": "production"
+            }'
           echo "✅ Notification sent successfully"
