@@ -121,6 +121,7 @@ jobs:
             cd /home/cicd/staging
 
             # Export des variables d'environnement pour Docker Compose
+            export HOST="cicd.nicolas-delahaie.fr"
             export DATABASE_ROOT_PASSWORD="${{ secrets.DATABASE_ROOT_PASSWORD }}"
             export DATABASE_ADMIN_PASSWORD="${{ secrets.DATABASE_ADMIN_PASSWORD }}"
             export PORT_FRONT=81
@@ -177,6 +178,7 @@ jobs:
             set -e
 
             # Export des variables d'environnement
+            export HOST="cicd.nicolas-delahaie.fr"
             export DATABASE_ROOT_PASSWORD="${{ secrets.DATABASE_ROOT_PASSWORD }}"
             export DATABASE_ADMIN_PASSWORD="${{ secrets.DATABASE_ADMIN_PASSWORD }}"
             export PORT_FRONT=80

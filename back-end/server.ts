@@ -7,7 +7,7 @@ import { connectDB } from "./config/database";
 
 const app = express();
 const PORT = 3000;
-const { NODE_ENV, PORT_FRONT } = process.env;
+const { NODE_ENV, PORT_FRONT, HOST } = process.env;
 
 // Verification des variables d'environnement
 if (
@@ -19,13 +19,13 @@ if (
   throw new Error("La variable d'environnement NODE_ENV n'est pas définie.");
 }
 
-if (!PORT_FRONT) {
+if (!PORT_FRONT || !HOST) {
   throw new Error("La variable d'environnement PORT_FRONT n'est pas définie.");
 }
 
 // Configuration CORS
 const corsOptions = {
-  origin: "http://localhost:" + PORT_FRONT,
+  origin: "http://" + HOST + ":" + PORT_FRONT,
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
