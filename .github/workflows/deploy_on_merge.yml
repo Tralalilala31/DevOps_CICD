@@ -66,8 +66,21 @@ jobs:
           fi
           echo "✅ All secrets are valid!"
 
+  ensure_unlocked:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if deployments are locked
+        id: lock
+        uses: github/lock@v2.3.1
+        with:
+          mode: "check"
+
+      - name: Fail if locked
+        if: steps.lock.outputs.locked == 'true'
+        run: exit 1
+
   deploy_staging:
-    needs: [test_webhook, backend_tests, check_secrets]
+    needs: [test_webhook, backend_tests, check_secrets, ensure_unlocked]
     # if: github.ref == 'refs/heads/develop' # TEMPORAIRE, décommenter
     runs-on: ubuntu-latest
     environment:
@@ -122,7 +135,7 @@ jobs:
         run: rm -f ~/.ssh/id_rsa
 
   deploy_production:
-    needs: [test_webhook, backend_tests, check_secrets]
+    needs: [test_webhook, backend_tests, check_secrets, ensure_unlocked]
     #if: github.ref == 'refs/heads/main' # TEMPORAIRE, décommenter
     runs-on: ubuntu-latest
     environment:
@@ -131,15 +144,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      - name: Check if deployments are locked
-        uses: github/lock@v2.3.1
-        with:
-          mode: "check"
-          
-      - name: Fail if locked
-        if: steps.lock.outputs.locked == 'true'
-        run: exit 1
 
       - name: Setup SSH Key
         run: |
